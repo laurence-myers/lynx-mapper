@@ -1,0 +1,14 @@
+# IDE/editor files
+.idea/
+*.iml
+
+# Generated files
+dist/
+
+# Junk
+*.log
+*.bak
+*.orig
+
+# NodeJS files
+node_modules/
