@@ -1,0 +1,37 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectMapper can convert an ObjectMapper instance into a function 1`] = `
+Object {
+  "outString": "dummy-string-1",
+  "outStringNullable": null,
+  "outStringNullableUndefined": undefined,
+  "outStringOptional": "dummy-string-4",
+  "outStringOptionalNullable": "dummy-string-5",
+  "outStringOptionalNullableUndefined": "dummy-string-6",
+  "outStringUndefined": "dummy-string-7",
+}
+`;
+
+exports[`ObjectMapper can map values using functions 1`] = `
+Object {
+  "outString": "dummy-string-1",
+  "outStringNullable": "dummy-string-2",
+  "outStringNullableUndefined": "dummy-string-3",
+  "outStringOptional": "dummy-string-4",
+  "outStringOptionalNullable": "dummy-string-5",
+  "outStringOptionalNullableUndefined": "dummy-string-6",
+  "outStringUndefined": "dummy-string-7",
+}
+`;
+
+exports[`ObjectMapper can map values using strings for property names on the input object 1`] = `
+Object {
+  "outString": "dummy-string-1",
+  "outStringNullable": "dummy-string-2",
+  "outStringNullableUndefined": "dummy-string-3",
+  "outStringOptional": "dummy-string-4",
+  "outStringOptionalNullable": "dummy-string-5",
+  "outStringOptionalNullableUndefined": "dummy-string-6",
+  "outStringUndefined": "dummy-string-7",
+}
+`;
