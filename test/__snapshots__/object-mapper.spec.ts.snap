@@ -36,6 +36,16 @@ Object {
 }
 `;
 
+exports[`ObjectMapper nested objects can map arrays of nested objects 1`] = `
+Object {
+  "outputArray": Array [
+    Object {
+      "outputValue": "nestedInputValue",
+    },
+  ],
+}
+`;
+
 exports[`ObjectMapper nested objects requires nested objects to be completely mapped 1`] = `
 Object {
   "nested": Object {

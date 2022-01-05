@@ -252,5 +252,54 @@ describe(`ObjectMapper`, () => {
       // Verify
       expect(result).toMatchSnapshot();
     });
+
+    it(`can map arrays of nested objects`, () => {
+      // Setup
+      interface NestedInput {
+        inputValue: string;
+      }
+
+      interface Input {
+        inputArray: NestedInput[];
+      }
+
+      interface NestedOutput {
+        outputValue: string;
+      }
+
+      interface Output {
+        outputArray: NestedOutput[];
+      }
+
+      const input: Input = {
+        inputArray: [
+          {
+            inputValue: "nestedInputValue",
+          },
+        ],
+      };
+
+      const nestedObjectMapper = new ObjectMapper<NestedInput, NestedOutput>({
+        outputValue: "inputValue",
+      });
+
+      const mapper = new ObjectMapper<Input, Output>({
+        outputArray: ObjectMapper.array(
+          ObjectMapper.nested(
+            nestedObjectMapper,
+            ObjectMapper.identity,
+            ObjectMapper.undefined
+          ),
+          (input: Input) => input.inputArray,
+          ObjectMapper.undefined
+        ),
+      });
+
+      // Execute
+      const result = mapper.map(input, undefined);
+
+      // Verify
+      expect(result).toMatchSnapshot();
+    });
   });
 });

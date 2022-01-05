@@ -37,11 +37,11 @@ type OptionalArgIfUndefined<T> = T extends undefined ? T | void : T;
  *
  * new ObjectMapper<Input, Output>({
  *   outString: "inString" // This is okay, since `Input["inString"]` has the same type as `Output["outString"]`
- * }, undefined);
+ * });
  *
  * new ObjectMapper<Input, Output>({
  *   outString: "inNumber" // This will error. `inNumber` has type `number`, so can't be used to populate `outString` which requires a `string`.
- * }, undefined);
+ * });
  *
  * new ObjectMapper<Input, Output>({
  *   outString: "inOptionalString" // This will error. `inOptionalString` can be `undefined`, which isn't compatible with `string` (when strict null checks are on).
@@ -49,8 +49,7 @@ type OptionalArgIfUndefined<T> = T extends undefined ? T | void : T;
  * ```
  *
  * The mapper function accepts a "context", which can store extra data, alongside the specific object you're mapping.
- * Pass `undefined` if you don't need any extra data.
- * (TODO: make it optional without breaking type safety.)
+ * Pass `undefined` if you don't need any extra data. You can also omit the argument.
  */
 export type ObjectMapperSchema<
   TInput extends object,
@@ -91,11 +90,40 @@ export class ObjectMapper<
   TContext extends object | undefined = undefined
 > {
   /**
+   * Used for mapping one array to another array.
+   */
+  public static array<
+    TInput extends object,
+    TContext extends object | undefined,
+    TNestedInput extends object,
+    TNestedOutput extends object,
+    TNestedContext extends object | undefined
+  >(
+    mapper: MapperFunction<TNestedInput, TNestedOutput, TNestedContext>,
+    inputGetter: (
+      input: TInput,
+      context: OptionalArgIfUndefined<TContext>
+    ) => readonly TNestedInput[],
+    contextFactory: (
+      input: TInput,
+      context: OptionalArgIfUndefined<TContext>
+    ) => TNestedContext
+  ): MapperFunction<TInput, TNestedOutput[], TContext> {
+    return function arrayMapper(input, context) {
+      const nestedInput = inputGetter(input, context);
+      const nestedContext = contextFactory(input, context);
+      return nestedInput.map((value) =>
+        mapper(value, nestedContext as OptionalArgIfUndefined<TNestedContext>)
+      );
+    };
+  }
+
+  /**
    * Returns the input value.
    */
-  // public static identity<T>(value: T): T {
-  //   return value;
-  // }
+  public static identity<T>(value: T): T {
+    return value;
+  }
 
   public static nested<
     TInput extends object,
