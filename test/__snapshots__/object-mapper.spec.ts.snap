@@ -35,3 +35,19 @@ Object {
   "outStringUndefined": "dummy-string-7",
 }
 `;
+
+exports[`ObjectMapper nested objects requires nested objects to be completely mapped 1`] = `
+Object {
+  "nested": Object {
+    "bar": "fooValue",
+  },
+}
+`;
+
+exports[`ObjectMapper nested objects requires passing a sub-context to the nested mapper 1`] = `
+Object {
+  "nested": Object {
+    "bar": "FOOVALUE",
+  },
+}
+`;

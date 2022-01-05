@@ -34,7 +34,7 @@ type AllowInputKeyIfInputCanExtendOutput<TInput, TOutputValue> = {
  * }
  *
  * new ObjectMapper<Input, Output>({
- *   outString: "inString" // This is okay, since `Input['inString']` has the same type as `Output["outString"]`
+ *   outString: "inString" // This is okay, since `Input["inString"]` has the same type as `Output["outString"]`
  * }, undefined);
  *
  * new ObjectMapper<Input, Output>({
@@ -66,6 +66,7 @@ interface ObjectMapperFunctionBeingBuilt<
   TContext extends object | undefined = undefined
 > {
   (value: TInput, context: TContext): TOutput;
+
   schema: ObjectMapperSchema<TInput, TOutput, TContext>;
 }
 
@@ -75,6 +76,7 @@ export interface ObjectMapperFunction<
   TContext extends object | undefined = undefined
 > {
   (value: TInput, context: TContext): TOutput;
+
   readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>;
 }
 
@@ -86,6 +88,31 @@ export class ObjectMapper<
   TOutput extends object,
   TContext extends object | undefined = undefined
 > {
+  /**
+   * Returns the input value.
+   */
+  // public static identity<T>(value: T): T {
+  //   return value;
+  // }
+
+  public static nested<
+    TInput extends object,
+    TContext extends object | undefined,
+    TNestedInput extends object,
+    TNestedOutput extends object,
+    TNestedContext extends object | undefined
+  >(
+    objectMapper: ObjectMapper<TNestedInput, TNestedOutput, TNestedContext>,
+    inputGetter: (input: TInput, context: TContext) => TNestedInput,
+    contextFactory: (input: TInput, context: TContext) => TNestedContext
+  ): MapperFunction<TInput, TNestedOutput, TContext> {
+    return function nestedObjectMapper(input, context) {
+      const nestedInput = inputGetter(input, context);
+      const nestedContext = contextFactory(input, context);
+      return objectMapper.map(nestedInput, nestedContext);
+    };
+  }
+
   public static null(): null {
     return null;
   }

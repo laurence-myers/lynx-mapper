@@ -173,4 +173,82 @@ describe(`ObjectMapper`, () => {
     expect(output).toMatchSnapshot();
     expect(objectMapperFunction.schema).toBe(objectMapperInstance.schema);
   });
+
+  describe(`nested objects`, () => {
+    interface Input {
+      foo: string;
+    }
+
+    interface Output {
+      nested: {
+        bar?: string;
+      };
+    }
+
+    interface NestedInput {
+      baz: string;
+    }
+
+    type NestedOutput = Output["nested"];
+
+    it(`requires nested objects to be completely mapped`, () => {
+      // Setup
+      const input: Input = {
+        foo: "fooValue",
+      };
+
+      const nestedObjectMapper = new ObjectMapper<NestedInput, NestedOutput>({
+        bar: "baz",
+      });
+
+      const mapper = new ObjectMapper<Input, Output>({
+        nested: ObjectMapper.nested(
+          nestedObjectMapper,
+          (input: Input) => ({ baz: input.foo }),
+          ObjectMapper.undefined
+        ),
+      });
+
+      // Execute
+      const result = mapper.map(input, undefined);
+
+      // Verify
+      expect(result).toMatchSnapshot();
+    });
+
+    // The sub-context requires a factory function, accepting the outer input and context.
+    it(`requires passing a sub-context to the nested mapper`, () => {
+      // Setup
+      interface NestedContext {
+        capitalize: boolean;
+      }
+
+      const input: Input = {
+        foo: "fooValue",
+      };
+
+      const nestedObjectMapper = new ObjectMapper<
+        NestedInput,
+        NestedOutput,
+        NestedContext
+      >({
+        bar: (input, context) =>
+          context.capitalize ? input.baz.toUpperCase() : input.baz,
+      });
+
+      const mapper = new ObjectMapper<Input, Output>({
+        nested: ObjectMapper.nested(
+          nestedObjectMapper,
+          (input: Input) => ({ baz: input.foo }),
+          () => ({ capitalize: true })
+        ),
+      });
+
+      // Execute
+      const result = mapper.map(input, undefined);
+
+      // Verify
+      expect(result).toMatchSnapshot();
+    });
+  });
 });
