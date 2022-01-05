@@ -50,10 +50,9 @@ describe(`ObjectMapper`, () => {
       inStringOptionalNullableUndefined: nextString(),
       inStringUndefined: nextString(),
     };
-    const context = undefined;
 
     // Execute
-    const output = objectMapper.map(input, context);
+    const output = objectMapper.map(input);
 
     // Verify
     expect(output).toMatchSnapshot();
@@ -110,6 +109,8 @@ describe(`ObjectMapper`, () => {
     };
 
     // Execute
+    // @ts-expect-error TS2554 If a context type is not `undefined`, a context must be provided.
+    expect(() => objectMapper.map(input)).toThrowError(TypeError);
     const output = objectMapper.map(input, context);
 
     // Verify
@@ -167,7 +168,8 @@ describe(`ObjectMapper`, () => {
 
     // Execute
     const objectMapperFunction = objectMapperInstance.toFunction();
-    const output = objectMapperFunction(input, context);
+    objectMapperFunction(input, context); // accepts context of "undefined"
+    const output = objectMapperFunction(input); // accepts no context arg
 
     // Verify
     expect(output).toMatchSnapshot();
