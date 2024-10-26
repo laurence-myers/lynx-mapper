@@ -1,7 +1,7 @@
 export interface MapperFunction<
   TInput extends object,
   TOutput,
-  TContext extends object | undefined
+  TContext extends object | undefined,
 > {
   (input: TInput, context: OptionalArgIfUndefined<TContext>): TOutput;
 }
@@ -54,7 +54,7 @@ type OptionalArgIfUndefined<T> = T extends undefined ? T | void : T;
 export type ObjectMapperSchema<
   TInput extends object,
   TOutput extends object,
-  TContext extends object | undefined
+  TContext extends object | undefined,
 > = {
   [K in keyof TOutput]-?:
     | MapperFunction<TInput, TOutput[K], TContext>
@@ -64,7 +64,7 @@ export type ObjectMapperSchema<
 interface ObjectMapperFunctionBeingBuilt<
   TInput extends object,
   TOutput extends object,
-  TContext extends object | undefined = undefined
+  TContext extends object | undefined = undefined,
 > {
   (value: TInput, context: OptionalArgIfUndefined<TContext>): TOutput;
 
@@ -74,11 +74,17 @@ interface ObjectMapperFunctionBeingBuilt<
 export interface ObjectMapperFunction<
   TInput extends object,
   TOutput extends object,
-  TContext extends object | undefined = undefined
+  TContext extends object | undefined = undefined,
 > {
   (value: TInput, context: OptionalArgIfUndefined<TContext>): TOutput;
 
   readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>;
+}
+
+function isProbablyKeyof<TInput>(
+  value: keyof TInput | unknown,
+): value is keyof TInput {
+  return typeof value === "string";
 }
 
 /**
@@ -87,7 +93,7 @@ export interface ObjectMapperFunction<
 export class ObjectMapper<
   TInput extends object,
   TOutput extends object,
-  TContext extends object | undefined = undefined
+  TContext extends object | undefined = undefined,
 > {
   /**
    * Used for mapping one array to another array.
@@ -97,17 +103,17 @@ export class ObjectMapper<
     TContext extends object | undefined,
     TNestedInput extends object,
     TNestedOutput extends object,
-    TNestedContext extends object | undefined
+    TNestedContext extends object | undefined,
   >(
     mapper: MapperFunction<TNestedInput, TNestedOutput, TNestedContext>,
     inputGetter: (
       input: TInput,
-      context: OptionalArgIfUndefined<TContext>
+      context: OptionalArgIfUndefined<TContext>,
     ) => readonly TNestedInput[],
     contextFactory: (
       input: TInput,
-      context: OptionalArgIfUndefined<TContext>
-    ) => TNestedContext
+      context: OptionalArgIfUndefined<TContext>,
+    ) => TNestedContext,
   ): MapperFunction<TInput, TNestedOutput[], TContext> {
     return function arrayMapper(input, context) {
       const nestedInput = inputGetter(input, context);
@@ -128,9 +134,9 @@ export class ObjectMapper<
   public static optional<
     TInput extends object,
     TOutput extends object,
-    TContext extends object | undefined
+    TContext extends object | undefined,
   >(
-    mapper: MapperFunction<TInput, TOutput, TContext>
+    mapper: MapperFunction<TInput, TOutput, TContext>,
   ): MapperFunction<TInput, TOutput | undefined, TContext> {
     return function optionalMapper(input, context) {
       if (input === undefined) {
@@ -145,24 +151,24 @@ export class ObjectMapper<
     TContext extends object | undefined,
     TNestedInput extends object,
     TNestedOutput extends object,
-    TNestedContext extends object | undefined
+    TNestedContext extends object | undefined,
   >(
     objectMapper: ObjectMapper<TNestedInput, TNestedOutput, TNestedContext>,
     inputGetter: (
       input: TInput,
-      context: OptionalArgIfUndefined<TContext>
+      context: OptionalArgIfUndefined<TContext>,
     ) => TNestedInput,
     contextFactory: (
       input: TInput,
-      context: OptionalArgIfUndefined<TContext>
-    ) => TNestedContext
+      context: OptionalArgIfUndefined<TContext>,
+    ) => TNestedContext,
   ): MapperFunction<TInput, TNestedOutput, TContext> {
     return function nestedObjectMapper(input, context) {
       const nestedInput = inputGetter(input, context);
       const nestedContext = contextFactory(input, context);
       return objectMapper.map(
         nestedInput,
-        nestedContext as OptionalArgIfUndefined<TNestedContext>
+        nestedContext as OptionalArgIfUndefined<TNestedContext>,
       );
     };
   }
@@ -176,15 +182,15 @@ export class ObjectMapper<
   }
 
   constructor(
-    public readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>
+    public readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>,
   ) {}
 
-  // Unsafe stuff happens here
   map(value: TInput, context: OptionalArgIfUndefined<TContext>): TOutput {
-    const output: Record<string, any> = {};
+    // Unsafe stuff happens here
+    const output: Record<string, unknown> = {};
     for (const [key, getterOrString] of Object.entries(this.schema)) {
-      if (typeof getterOrString === "string") {
-        output[key] = (value as any)[getterOrString];
+      if (isProbablyKeyof<TInput>(getterOrString)) {
+        output[key] = value[getterOrString];
       } else {
         output[key] = (
           getterOrString as MapperFunction<TInput, TOutput, TContext>
@@ -197,7 +203,7 @@ export class ObjectMapper<
   toFunction(): ObjectMapperFunction<TInput, TOutput, TContext> {
     const func: ObjectMapperFunctionBeingBuilt<TInput, TOutput, TContext> = (
       value,
-      context
+      context,
     ) => this.map(value, context as OptionalArgIfUndefined<TContext>);
     func.schema = this.schema;
     return func;

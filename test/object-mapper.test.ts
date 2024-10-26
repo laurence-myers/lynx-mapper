@@ -1,4 +1,6 @@
-import { ObjectMapper } from "../src/object-mapper";
+import { describe, it } from "jsr:@std/testing/bdd";
+import { expect } from "jsr:@std/expect";
+import { ObjectMapper } from "../src/object-mapper.ts";
 
 function stringCounter(start = 0): () => string {
   let i = start;
@@ -55,7 +57,15 @@ describe(`ObjectMapper`, () => {
     const output = objectMapper.map(input);
 
     // Verify
-    expect(output).toMatchSnapshot();
+    expect(output).toStrictEqual({
+      outString: "dummy-string-1",
+      outStringNullable: "dummy-string-2",
+      outStringNullableUndefined: "dummy-string-3",
+      outStringOptional: "dummy-string-4",
+      outStringOptionalNullable: "dummy-string-5",
+      outStringOptionalNullableUndefined: "dummy-string-6",
+      outStringUndefined: "dummy-string-7",
+    });
   });
 
   it(`can map values using functions`, () => {
@@ -87,7 +97,15 @@ describe(`ObjectMapper`, () => {
     const output = objectMapper.map(input, context);
 
     // Verify
-    expect(output).toMatchSnapshot();
+    expect(output).toStrictEqual({
+      outString: "dummy-string-1",
+      outStringNullable: "dummy-string-2",
+      outStringNullableUndefined: "dummy-string-3",
+      outStringOptional: "dummy-string-4",
+      outStringOptionalNullable: "dummy-string-5",
+      outStringOptionalNullableUndefined: "dummy-string-6",
+      outStringUndefined: "dummy-string-7",
+    });
   });
 
   it(`can map values using functions, with an additional context object`, () => {
@@ -110,7 +128,8 @@ describe(`ObjectMapper`, () => {
 
     // Execute
     // @ts-expect-error TS2554 If a context type is not `undefined`, a context must be provided.
-    expect(() => objectMapper.map(input)).toThrowError(TypeError);
+    const failingCall = () => objectMapper.map(input);
+    expect(failingCall).toThrow(TypeError);
     const output = objectMapper.map(input, context);
 
     // Verify
@@ -172,7 +191,15 @@ describe(`ObjectMapper`, () => {
     const output = objectMapperFunction(input); // accepts no context arg
 
     // Verify
-    expect(output).toMatchSnapshot();
+    expect(output).toStrictEqual({
+      outString: "dummy-string-1",
+      outStringNullable: null,
+      outStringNullableUndefined: undefined,
+      outStringOptional: "dummy-string-4",
+      outStringOptionalNullable: "dummy-string-5",
+      outStringOptionalNullableUndefined: "dummy-string-6",
+      outStringUndefined: "dummy-string-7",
+    });
     expect(objectMapperFunction.schema).toBe(objectMapperInstance.schema);
   });
 
@@ -207,7 +234,7 @@ describe(`ObjectMapper`, () => {
         nested: ObjectMapper.nested(
           nestedObjectMapper,
           (input: Input) => ({ baz: input.foo }),
-          ObjectMapper.undefined
+          ObjectMapper.undefined,
         ),
       });
 
@@ -215,7 +242,11 @@ describe(`ObjectMapper`, () => {
       const result = mapper.map(input, undefined);
 
       // Verify
-      expect(result).toMatchSnapshot();
+      expect(result).toStrictEqual({
+        nested: {
+          bar: "fooValue",
+        },
+      });
     });
 
     // The sub-context requires a factory function, accepting the outer input and context.
@@ -242,7 +273,7 @@ describe(`ObjectMapper`, () => {
         nested: ObjectMapper.nested(
           nestedObjectMapper,
           (input: Input) => ({ baz: input.foo }),
-          () => ({ capitalize: true })
+          () => ({ capitalize: true }),
         ),
       });
 
@@ -250,7 +281,11 @@ describe(`ObjectMapper`, () => {
       const result = mapper.map(input, undefined);
 
       // Verify
-      expect(result).toMatchSnapshot();
+      expect(result).toStrictEqual({
+        nested: {
+          bar: "FOOVALUE",
+        },
+      });
     });
 
     it(`can map arrays of nested objects`, () => {
@@ -288,10 +323,10 @@ describe(`ObjectMapper`, () => {
           ObjectMapper.nested(
             nestedObjectMapper,
             ObjectMapper.identity,
-            ObjectMapper.undefined
+            ObjectMapper.undefined,
           ),
           (input: Input) => input.inputArray,
-          ObjectMapper.undefined
+          ObjectMapper.undefined,
         ),
       });
 
@@ -299,7 +334,11 @@ describe(`ObjectMapper`, () => {
       const result = mapper.map(input, undefined);
 
       // Verify
-      expect(result).toMatchSnapshot();
+      expect(result).toStrictEqual({
+        outputArray: [{
+          outputValue: "nestedInputValue",
+        }],
+      });
     });
   });
 });

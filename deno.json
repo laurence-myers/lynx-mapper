@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "check-all": "deno check . && deno lint && deno fmt --check && deno test"
+  },
+  "imports": {
+  }
+}
