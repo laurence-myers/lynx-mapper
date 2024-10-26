@@ -125,6 +125,21 @@ export class ObjectMapper<
     return value;
   }
 
+  public static optional<
+    TInput extends object,
+    TOutput extends object,
+    TContext extends object | undefined
+  >(
+    mapper: MapperFunction<TInput, TOutput, TContext>
+  ): MapperFunction<TInput, TOutput | undefined, TContext> {
+    return function optionalMapper(input, context) {
+      if (input === undefined) {
+        return undefined;
+      }
+      return mapper(input, context);
+    };
+  }
+
   public static nested<
     TInput extends object,
     TContext extends object | undefined,
