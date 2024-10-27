@@ -3,6 +3,19 @@ import { expect } from "jsr:@std/expect";
 import { ObjectMapper } from "../src/object-mapper.ts";
 import { mapFrom } from "../src/map-from.ts";
 
+function omit<TObject extends object, TKeys extends keyof TObject>(
+  obj: TObject,
+  keys: readonly (TKeys)[],
+): Omit<TObject, (typeof keys)[number]> {
+  const output: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (keys.indexOf(key as TKeys) === -1) {
+      output[key] = value;
+    }
+  }
+  return output as Omit<TObject, typeof keys[number]>;
+}
+
 function stringCounter(start = 0): () => string {
   let i = start;
   return () => {
@@ -211,6 +224,50 @@ describe(`ObjectMapper`, () => {
     };
     expect(output).toStrictEqual(expected);
     expect(objectMapperFunction.schema).toBe(objectMapperInstance.schema);
+  });
+
+  it(`can reuse schema from an existing mapper`, () => {
+    interface InputV1 {
+      in1: string;
+      in2: number;
+    }
+
+    interface OutputV1 {
+      out1: string;
+      out2: number;
+    }
+
+    interface OutputV2 {
+      out1: string;
+      out3: number;
+    }
+
+    const objectMapperV1 = new ObjectMapper<InputV1, OutputV1>({
+      out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
+      out2: "in2",
+    });
+    const objectMapperV2 = new ObjectMapper<InputV1, OutputV2>({
+      ...omit(objectMapperV1.schema, ["out2"]),
+      out3: objectMapperV1.schema.out2,
+    });
+
+    const expectedOutput1: OutputV1 = {
+      out1: "HELLO",
+      out2: 123,
+    };
+    expect(objectMapperV1.map({
+      in1: "hello",
+      in2: 123,
+    })).toStrictEqual(expectedOutput1);
+
+    const expectedOutput2: OutputV2 = {
+      out1: "HELLO",
+      out3: 123,
+    };
+    expect(objectMapperV2.map({
+      in1: "hello",
+      in2: 123,
+    })).toStrictEqual(expectedOutput2);
   });
 
   describe(`nested objects`, () => {
