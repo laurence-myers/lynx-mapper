@@ -46,6 +46,16 @@ Install shell autocompletes:
 deno completions powershell >> $PROFILE
 ```
 
+### Setup for Publishing to NPM
+
+Install NodeJS v20 and NPM 10.8.2.
+
+```PowerShell
+scoop install nodejs-lts@20.18.0
+npm --version
+10.8.2
+```
+
 ## IntelliJ Setup
 
 - Install "File Watchers"
@@ -69,4 +79,12 @@ Do all checks:
 
 ```powershell
 deno task check-all
+```
+
+## Publish to NPM
+
+Change `1.2.3` to the desired version.
+
+```PowerShell
+deno task build-npm 1.2.3
 ```
