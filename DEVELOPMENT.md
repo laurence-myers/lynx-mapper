@@ -1,3 +1,5 @@
+# Development
+
 This library targets Deno:
 
 ```
@@ -5,6 +7,55 @@ deno 2.0.3 (stable, release, x86_64-pc-windows-msvc)
 v8 12.9.202.13-rusty
 typescript 5.6.2
 ```
+
+## Setup - Windows using PowerShell
+
+### Install Scoop
+
+```PowerShell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm get.scoop.sh | iex
+```
+
+### Install Deno
+
+```PowerShell
+scoop install deno@2.0.3
+```
+
+Check the version:
+
+```PowerShell
+deno --version
+deno 2.0.3 (stable, release, x86_64-pc-windows-msvc)
+v8 12.9.202.13-rusty
+typescript 5.6.2
+```
+
+Create your shell profile if it doesn't already exist:
+
+```PowerShell
+if (!(Test-Path -Path $PROFILE)) {
+  New-Item -ItemType File -Path $PROFILE -Force
+}
+```
+
+Install shell autocompletes:
+
+```PowerShell
+deno completions powershell >> $PROFILE
+```
+
+## IntelliJ Setup
+
+- Install "File Watchers"
+- Create a File Watcher called "deno fmt"
+  - File type: "TypeScript"
+  - Program: "deno"
+  - Argument: "fmt"
+  - Untick "Auto-save edited files to trigger the watcher" and "Trigger the
+    watcher on external changes"
+- Set file watcher as an "Action on Save"
 
 ## Deno usage
 

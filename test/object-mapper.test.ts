@@ -1,6 +1,7 @@
 import { describe, it } from "jsr:@std/testing/bdd";
 import { expect } from "jsr:@std/expect";
 import { ObjectMapper } from "../src/object-mapper.ts";
+import { mapFrom } from "../src/map-from.ts";
 
 function stringCounter(start = 0): () => string {
   let i = start;
@@ -22,6 +23,7 @@ describe(`ObjectMapper`, () => {
 
   interface Output {
     outString: string;
+    outStringConstant: string;
     outStringOptional?: string;
     outStringUndefined: string | undefined;
     outStringNullable: string | null;
@@ -34,6 +36,7 @@ describe(`ObjectMapper`, () => {
     // Setup
     const objectMapper = new ObjectMapper<Input, Output>({
       outString: "inString",
+      outStringConstant: mapFrom.constant("someConstantValue"), // no input value
       outStringNullable: "inStringNullable",
       outStringNullableUndefined: "inStringNullableUndefined",
       outStringOptional: "inStringOptional",
@@ -59,6 +62,7 @@ describe(`ObjectMapper`, () => {
     // Verify
     expect(output).toStrictEqual({
       outString: "dummy-string-1",
+      outStringConstant: "someConstantValue",
       outStringNullable: "dummy-string-2",
       outStringNullableUndefined: "dummy-string-3",
       outStringOptional: "dummy-string-4",
@@ -72,6 +76,7 @@ describe(`ObjectMapper`, () => {
     // Setup
     const objectMapper = new ObjectMapper<Input, Output>({
       outString: (input) => input.inString,
+      outStringConstant: () => "someConstantValue",
       outStringNullable: (input) => input.inStringNullable,
       outStringNullableUndefined: (input) => input.inStringNullableUndefined,
       outStringOptional: (input) => input.inStringOptional,
@@ -97,15 +102,17 @@ describe(`ObjectMapper`, () => {
     const output = objectMapper.map(input, context);
 
     // Verify
-    expect(output).toStrictEqual({
+    const expected = {
       outString: "dummy-string-1",
+      outStringConstant: "someConstantValue",
       outStringNullable: "dummy-string-2",
       outStringNullableUndefined: "dummy-string-3",
       outStringOptional: "dummy-string-4",
       outStringOptionalNullable: "dummy-string-5",
       outStringOptionalNullableUndefined: "dummy-string-6",
       outStringUndefined: "dummy-string-7",
-    });
+    };
+    expect(output).toStrictEqual(expected);
   });
 
   it(`can map values using functions, with an additional context object`, () => {
@@ -149,7 +156,7 @@ describe(`ObjectMapper`, () => {
       outStringOptional: "inStringNullable",
       outStringOptionalNullable: "inStringUndefined",
       outStringOptionalNullableUndefined: "inString", // this is okay, it's a subset
-      outStringUndefined: ObjectMapper.undefined, // Can use this convenience static method to always map to `undefined`
+      outStringUndefined: mapFrom.undefined, // Can use this convenience function to always map to `undefined`
     });
   });
 
@@ -165,8 +172,9 @@ describe(`ObjectMapper`, () => {
     // Setup
     const objectMapperInstance = new ObjectMapper<Input, Output>({
       outString: "inString",
-      outStringNullable: ObjectMapper.null,
-      outStringNullableUndefined: ObjectMapper.undefined,
+      outStringConstant: mapFrom.constant("someConstantValue"),
+      outStringNullable: mapFrom.null,
+      outStringNullableUndefined: mapFrom.undefined,
       outStringOptional: "inStringOptional",
       outStringOptionalNullable: "inStringOptionalNullable",
       outStringOptionalNullableUndefined: "inStringOptionalNullableUndefined",
@@ -191,15 +199,17 @@ describe(`ObjectMapper`, () => {
     const output = objectMapperFunction(input); // accepts no context arg
 
     // Verify
-    expect(output).toStrictEqual({
+    const expected: Output = {
       outString: "dummy-string-1",
+      outStringConstant: "someConstantValue",
       outStringNullable: null,
       outStringNullableUndefined: undefined,
       outStringOptional: "dummy-string-4",
       outStringOptionalNullable: "dummy-string-5",
       outStringOptionalNullableUndefined: "dummy-string-6",
       outStringUndefined: "dummy-string-7",
-    });
+    };
+    expect(output).toStrictEqual(expected);
     expect(objectMapperFunction.schema).toBe(objectMapperInstance.schema);
   });
 
@@ -231,11 +241,7 @@ describe(`ObjectMapper`, () => {
       });
 
       const mapper = new ObjectMapper<Input, Output>({
-        nested: ObjectMapper.nested(
-          nestedObjectMapper,
-          (input: Input) => ({ baz: input.foo }),
-          ObjectMapper.undefined,
-        ),
+        nested: (input: Input) => nestedObjectMapper.map({ baz: input.foo }),
       });
 
       // Execute
@@ -249,8 +255,7 @@ describe(`ObjectMapper`, () => {
       });
     });
 
-    // The sub-context requires a factory function, accepting the outer input and context.
-    it(`requires passing a sub-context to the nested mapper`, () => {
+    it(`can pass a sub-context to the nested mapper`, () => {
       // Setup
       interface NestedContext {
         capitalize: boolean;
@@ -270,11 +275,8 @@ describe(`ObjectMapper`, () => {
       });
 
       const mapper = new ObjectMapper<Input, Output>({
-        nested: ObjectMapper.nested(
-          nestedObjectMapper,
-          (input: Input) => ({ baz: input.foo }),
-          () => ({ capitalize: true }),
-        ),
+        nested: (input: Input) =>
+          nestedObjectMapper.map({ baz: input.foo }, { capitalize: true }),
       });
 
       // Execute
@@ -319,15 +321,7 @@ describe(`ObjectMapper`, () => {
       });
 
       const mapper = new ObjectMapper<Input, Output>({
-        outputArray: ObjectMapper.array(
-          ObjectMapper.nested(
-            nestedObjectMapper,
-            ObjectMapper.identity,
-            ObjectMapper.undefined,
-          ),
-          (input: Input) => input.inputArray,
-          ObjectMapper.undefined,
-        ),
+        outputArray: (input) => nestedObjectMapper.array(input.inputArray),
       });
 
       // Execute
@@ -338,6 +332,76 @@ describe(`ObjectMapper`, () => {
         outputArray: [{
           outputValue: "nestedInputValue",
         }],
+      });
+    });
+
+    it(`can pass through optional/nullable values`, () => {
+      interface Input {
+        nullable: NestedInput | null;
+        nullableOptional?: NestedInput | null;
+        optional?: NestedInput;
+      }
+
+      interface Output {
+        nullable: NestedOutput | null;
+        nullableOptional?: NestedOutput | null;
+        optional?: NestedOutput;
+      }
+
+      const nestedObjectMapper = new ObjectMapper<NestedInput, NestedOutput>({
+        bar: "baz",
+      });
+
+      // Setup
+      new ObjectMapper<Input, Output>({
+        nullable: (input) => nestedObjectMapper.map(input.nullable),
+        nullableOptional: (input) =>
+          nestedObjectMapper.map(input.nullableOptional),
+        optional: (input) => nestedObjectMapper.map(input.optional),
+      });
+
+      new ObjectMapper<Input, Output>({
+        // @ts-expect-error Can't return undefined for a nullable output
+        nullable: (input) => nestedObjectMapper.map(input.optional),
+        nullableOptional: (input) =>
+          nestedObjectMapper.map(input.nullableOptional),
+        // @ts-expect-error Can't return null for an optional output
+        optional: (input) => nestedObjectMapper.map(input.nullable),
+      });
+    });
+
+    it(`can pass through optional/nullable arrays`, () => {
+      interface Input {
+        nullable: readonly NestedInput[] | null;
+        nullableOptional?: readonly NestedInput[] | null;
+        optional?: Set<NestedInput>;
+      }
+
+      interface Output {
+        nullable: NestedOutput[] | null;
+        nullableOptional?: NestedOutput[] | null;
+        optional?: NestedOutput[];
+      }
+
+      const nestedObjectMapper = new ObjectMapper<NestedInput, NestedOutput>({
+        bar: "baz",
+      });
+
+      // Setup
+      new ObjectMapper<Input, Output>({
+        nullable: (input) => nestedObjectMapper.array(input.nullable),
+        nullableOptional: (input) =>
+          nestedObjectMapper.array(input.nullableOptional),
+        optional: (input) => nestedObjectMapper.array(input.optional),
+      });
+
+      new ObjectMapper<Input, Output>({
+        // @ts-expect-error Can't return undefined for a nullable output
+        nullable: (input) => nestedObjectMapper.array(input.optional),
+        nullableOptional: (input) =>
+          nestedObjectMapper.array(input.nullableOptional),
+        // @ts-expect-error Can't return null for an optional output
+        optional: (input) => nestedObjectMapper.array(input.nullable),
       });
     });
   });

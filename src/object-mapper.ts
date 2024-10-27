@@ -12,7 +12,16 @@ type AllowInputKeyIfInputCanExtendOutput<TInput, TOutputValue> = {
     : never;
 }[keyof TInput];
 
-type OptionalArgIfUndefined<T> = T extends undefined ? T | void : T;
+export type MapperSchemaValue<
+  TInput extends object,
+  TOutput,
+  TContext extends object | undefined,
+  TOutputKey extends keyof TOutput = keyof TOutput,
+> =
+  | MapperFunction<TInput, TOutput[TOutputKey], TContext>
+  | AllowInputKeyIfInputCanExtendOutput<TInput, TOutput[TOutputKey]>;
+
+export type OptionalArgIfUndefined<T> = T extends undefined ? T | void : T;
 
 /**
  * Every property name must match a property name in the desired output type.
@@ -56,9 +65,7 @@ export type ObjectMapperSchema<
   TOutput extends object,
   TContext extends object | undefined,
 > = {
-  [K in keyof TOutput]-?:
-    | MapperFunction<TInput, TOutput[K], TContext>
-    | AllowInputKeyIfInputCanExtendOutput<TInput, TOutput[K]>;
+  [K in keyof TOutput]-?: MapperSchemaValue<TInput, TOutput, TContext, K>;
 };
 
 interface ObjectMapperFunctionBeingBuilt<
@@ -81,9 +88,9 @@ export interface ObjectMapperFunction<
   readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>;
 }
 
-function isProbablyKeyof<TInput>(
-  value: keyof TInput | unknown,
-): value is keyof TInput {
+function isProbablyKeyof<TObject>(
+  value: keyof TObject | unknown,
+): value is keyof TObject {
   return typeof value === "string";
 }
 
@@ -95,104 +102,81 @@ export class ObjectMapper<
   TOutput extends object,
   TContext extends object | undefined = undefined,
 > {
-  /**
-   * Used for mapping one array to another array.
-   */
-  public static array<
-    TInput extends object,
-    TContext extends object | undefined,
-    TNestedInput extends object,
-    TNestedOutput extends object,
-    TNestedContext extends object | undefined,
-  >(
-    mapper: MapperFunction<TNestedInput, TNestedOutput, TNestedContext>,
-    inputGetter: (
-      input: TInput,
-      context: OptionalArgIfUndefined<TContext>,
-    ) => readonly TNestedInput[],
-    contextFactory: (
-      input: TInput,
-      context: OptionalArgIfUndefined<TContext>,
-    ) => TNestedContext,
-  ): MapperFunction<TInput, TNestedOutput[], TContext> {
-    return function arrayMapper(input, context) {
-      const nestedInput = inputGetter(input, context);
-      const nestedContext = contextFactory(input, context);
-      return nestedInput.map((value) =>
-        mapper(value, nestedContext as OptionalArgIfUndefined<TNestedContext>)
-      );
-    };
-  }
-
-  /**
-   * Returns the input value.
-   */
-  public static identity<T>(value: T): T {
-    return value;
-  }
-
-  public static optional<
-    TInput extends object,
-    TOutput extends object,
-    TContext extends object | undefined,
-  >(
-    mapper: MapperFunction<TInput, TOutput, TContext>,
-  ): MapperFunction<TInput, TOutput | undefined, TContext> {
-    return function optionalMapper(input, context) {
-      if (input === undefined) {
-        return undefined;
-      }
-      return mapper(input, context);
-    };
-  }
-
-  public static nested<
-    TInput extends object,
-    TContext extends object | undefined,
-    TNestedInput extends object,
-    TNestedOutput extends object,
-    TNestedContext extends object | undefined,
-  >(
-    objectMapper: ObjectMapper<TNestedInput, TNestedOutput, TNestedContext>,
-    inputGetter: (
-      input: TInput,
-      context: OptionalArgIfUndefined<TContext>,
-    ) => TNestedInput,
-    contextFactory: (
-      input: TInput,
-      context: OptionalArgIfUndefined<TContext>,
-    ) => TNestedContext,
-  ): MapperFunction<TInput, TNestedOutput, TContext> {
-    return function nestedObjectMapper(input, context) {
-      const nestedInput = inputGetter(input, context);
-      const nestedContext = contextFactory(input, context);
-      return objectMapper.map(
-        nestedInput,
-        nestedContext as OptionalArgIfUndefined<TNestedContext>,
-      );
-    };
-  }
-
-  public static null(): null {
-    return null;
-  }
-
-  public static undefined(): undefined {
-    return undefined;
-  }
+  private readonly schemaMap: Map<
+    keyof TOutput,
+    MapperSchemaValue<TInput, TOutput, TContext>
+  >;
 
   constructor(
     public readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>,
-  ) {}
+  ) {
+    this.schemaMap = new Map<
+      keyof TOutput,
+      MapperSchemaValue<TInput, TOutput, TContext>
+    >(Object.entries(this.schema) as [
+      keyof TOutput,
+      MapperSchemaValue<TInput, TOutput, TContext>,
+    ][]);
+  }
 
+  array(
+    input: Iterable<TInput>,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput[];
+  array(
+    input: Iterable<TInput> | null,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput[] | null;
+  array(
+    input: Iterable<TInput> | undefined,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput[] | undefined;
+  array(
+    input: Iterable<TInput> | null | undefined,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput[] | null | undefined;
+  array(
+    input: Iterable<TInput> | null | undefined,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput[] | null | undefined {
+    if (input === undefined || input === null) {
+      return input;
+    } else if (Array.isArray(input)) {
+      // This approach might be faster than using the iterator protocol ("for of" loop)
+      return input.map((item) => this.map(item, context));
+    } else {
+      const output = [];
+      for (const item of input) {
+        output.push(this.map(item, context));
+      }
+      return output;
+    }
+  }
+
+  map(value: TInput, context: OptionalArgIfUndefined<TContext>): TOutput;
+  map(
+    value: TInput | null,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput | null;
+  map(
+    value: TInput | undefined,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput | undefined;
+  map(
+    value: TInput | null | undefined,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput | null | undefined;
   map(value: TInput, context: OptionalArgIfUndefined<TContext>): TOutput {
+    if (value === null || value === undefined) {
+      return value;
+    }
     // Unsafe stuff happens here
     const output: Record<string, unknown> = {};
-    for (const [key, getterOrString] of Object.entries(this.schema)) {
-      if (isProbablyKeyof<TInput>(getterOrString)) {
-        output[key] = value[getterOrString];
+    for (const [key, getterOrString] of this.schemaMap) {
+      if (isProbablyKeyof<TOutput>(getterOrString)) {
+        output[key as string] = value[getterOrString];
       } else {
-        output[key] = (
+        output[key as string] = (
           getterOrString as MapperFunction<TInput, TOutput, TContext>
         )(value, context);
       }
@@ -204,7 +188,7 @@ export class ObjectMapper<
     const func: ObjectMapperFunctionBeingBuilt<TInput, TOutput, TContext> = (
       value,
       context,
-    ) => this.map(value, context as OptionalArgIfUndefined<TContext>);
+    ) => this.map(value, context);
     func.schema = this.schema;
     return func;
   }
