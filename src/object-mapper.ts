@@ -1,9 +1,14 @@
+import { OmitProperty } from "./omit-property.ts";
+
 export interface MapperFunction<
   TInput extends object,
   TOutput,
   TContext extends object | undefined,
 > {
-  (input: TInput, context: OptionalArgIfUndefined<TContext>): TOutput;
+  (
+    input: TInput,
+    context: OptionalArgIfUndefined<TContext>,
+  ): TOutput | OmitProperty;
 }
 
 type AllowInputKeyIfInputCanExtendOutput<TInput, TOutputValue> = {
@@ -176,9 +181,12 @@ export class ObjectMapper<
       if (isProbablyKeyof<TOutput>(getterOrString)) {
         output[key as string] = value[getterOrString];
       } else {
-        output[key as string] = (
+        const mappedValue = (
           getterOrString as MapperFunction<TInput, TOutput, TContext>
         )(value, context);
+        if (mappedValue !== OmitProperty) {
+          output[key as string] = mappedValue;
+        }
       }
     }
     return output as TOutput;

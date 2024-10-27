@@ -2,6 +2,7 @@ import { describe, it } from "jsr:@std/testing/bdd";
 import { expect } from "jsr:@std/expect";
 import { ObjectMapper } from "../src/object-mapper.ts";
 import { mapFrom } from "../src/map-from.ts";
+import { OmitProperty } from "../src/omit-property.ts";
 
 function omit<TObject extends object, TKeys extends keyof TObject>(
   obj: TObject,
@@ -188,8 +189,8 @@ describe(`ObjectMapper`, () => {
       outStringConstant: mapFrom.constant("someConstantValue"),
       outStringNullable: mapFrom.null,
       outStringNullableUndefined: mapFrom.undefined,
-      outStringOptional: "inStringOptional",
-      outStringOptionalNullable: "inStringOptionalNullable",
+      outStringOptional: mapFrom.omit,
+      outStringOptionalNullable: () => OmitProperty,
       outStringOptionalNullableUndefined: "inStringOptionalNullableUndefined",
       outStringUndefined: "inStringUndefined",
     });
@@ -217,8 +218,8 @@ describe(`ObjectMapper`, () => {
       outStringConstant: "someConstantValue",
       outStringNullable: null,
       outStringNullableUndefined: undefined,
-      outStringOptional: "dummy-string-4",
-      outStringOptionalNullable: "dummy-string-5",
+      // outStringOptional: "dummy-string-4", // omitted
+      // outStringOptionalNullable: "dummy-string-5", // omitted
       outStringOptionalNullableUndefined: "dummy-string-6",
       outStringUndefined: "dummy-string-7",
     };
