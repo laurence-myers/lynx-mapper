@@ -88,3 +88,9 @@ Change `1.2.3` to the desired version.
 ```PowerShell
 deno task build-npm 1.2.3
 ```
+
+## Build docs
+
+```PowerShell
+deno task build-docs
+```

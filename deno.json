@@ -1,9 +1,14 @@
 {
   "tasks": {
+    "build-docs": "deno doc --html --name=\"Lynx Mapper\" ./mod.ts",
     "build-npm": "deno run -A scripts/build_npm.ts",
     "check-all": "deno check . && deno lint && deno fmt --check && deno test"
   },
   "imports": {
     "@deno/dnt": "jsr:@deno/dnt@^0.41.3"
-  }
+  },
+  "exclude": [
+    "docs/",
+    "npm/"
+  ]
 }
