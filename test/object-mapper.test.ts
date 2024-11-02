@@ -278,6 +278,43 @@ describe(`ObjectMapper`, () => {
     })).toStrictEqual(expectedOutput2);
   });
 
+  it(`LIMITATION: can reuse a mapper function for a different input type, but not directly from the schema`, () => {
+    interface InputV1 {
+      in1: string;
+      in2: number;
+    }
+
+    interface InputV2 {
+      in1: string;
+      in3: boolean;
+    }
+
+    interface Output {
+      out1: string;
+      out2?: number;
+    }
+
+    const objectMapperV1 = new ObjectMapper<InputV1, Output>({
+      out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
+      out2: "in2",
+    });
+
+    new ObjectMapper<InputV2, Output>({
+      // @ts-expect-error: The V1 mapper requires a V1 input, which isn't compatible with a V2 input
+      out1: objectMapperV1.schema.out1,
+      out2: mapFrom.undefined,
+    });
+
+    function getIn1(input: Pick<InputV1, "in1">) {
+      return input.in1.toUpperCase();
+    }
+
+    new ObjectMapper<InputV2, Output>({
+      out1: getIn1, // This works, because it's a more specific type
+      out2: mapFrom.undefined,
+    });
+  });
+
   describe(`nested objects`, () => {
     interface Input {
       foo: string;
