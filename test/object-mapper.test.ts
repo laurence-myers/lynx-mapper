@@ -88,10 +88,16 @@ describe(`ObjectMapper`, () => {
 
   it(`can map values using functions`, () => {
     // Setup
+    function mapInStringNullable(
+      input: Pick<Input, "inStringNullable">,
+    ): string | null {
+      return input.inStringNullable;
+    }
+
     const objectMapper = new ObjectMapper<Input, Output>({
       outString: (input) => input.inString,
       outStringConstant: () => "someConstantValue",
-      outStringNullable: (input) => input.inStringNullable,
+      outStringNullable: mapInStringNullable,
       outStringNullableUndefined: (input) => input.inStringNullableUndefined,
       outStringOptional: (input) => input.inStringOptional,
       outStringOptionalNullable: (input) => input.inStringOptionalNullable,
