@@ -51,4 +51,5 @@ await build({
   shims: {
     deno: "dev",
   },
+  rootTestDir: "./tests",
 });
