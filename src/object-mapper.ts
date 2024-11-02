@@ -10,13 +10,14 @@ import { OmitProperty } from "./omit-property.ts";
  */
 export interface MapperFunction<
   TInput extends object,
-  TOutput,
+  TOutput extends object,
   TContext extends object | undefined,
+  TOutputKey extends keyof TOutput = keyof TOutput,
 > {
   (
     input: TInput,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput | OmitProperty;
+  ): TOutput[TOutputKey] | AllowOmitIfOptional<TOutput, TOutputKey>;
 }
 
 /**
@@ -49,6 +50,14 @@ export type AllowInputKeyIfInputCanExtendOutput<TInput, TOutputValue> = {
     : never;
 }[keyof TInput];
 
+type AllowOmitIfOptional<
+  TOutput extends object,
+  TOutputKey extends keyof TOutput,
+> = {
+  [K in TOutputKey]?: TOutput[TOutputKey];
+} extends Pick<TOutput, TOutputKey> ? OmitProperty
+  : never;
+
 /**
  * A mapper function, or input property name, used in an {@linkcode ObjectMapperSchema}.
  *
@@ -59,11 +68,11 @@ export type AllowInputKeyIfInputCanExtendOutput<TInput, TOutputValue> = {
  */
 export type MapperSchemaValue<
   TInput extends object,
-  TOutput,
+  TOutput extends object,
   TContext extends object | undefined,
   TOutputKey extends keyof TOutput = keyof TOutput,
 > =
-  | MapperFunction<TInput, TOutput[TOutputKey], TContext>
+  | MapperFunction<TInput, TOutput, TContext, TOutputKey>
   | AllowInputKeyIfInputCanExtendOutput<TInput, TOutput[TOutputKey]>;
 
 /**

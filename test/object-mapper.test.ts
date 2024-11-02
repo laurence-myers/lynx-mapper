@@ -176,7 +176,8 @@ describe(`ObjectMapper`, () => {
       outStringOptional: "inStringNullable",
       outStringOptionalNullable: "inStringUndefined",
       outStringOptionalNullableUndefined: "inString", // this is okay, it's a subset
-      outStringUndefined: mapFrom.undefined, // Can use this convenience function to always map to `undefined`
+      // @ts-expect-error TS2322 Properties can only be omitted if they are optional, not `undefined`
+      outStringUndefined: mapFrom.omit,
     });
   });
 
