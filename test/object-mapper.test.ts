@@ -254,10 +254,16 @@ describe(`ObjectMapper`, () => {
       out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
       out2: "in2",
     });
-    const objectMapperV2 = new ObjectMapper<InputV1, OutputV2>({
-      ...omit(objectMapperV1.schema, ["out2"]),
-      out3: objectMapperV1.schema.out2,
-    });
+    new ObjectMapper<InputV1, OutputV1>(
+      // @ts-expect-error: you can't re-use a schema directly
+      objectMapperV1.schema,
+    );
+    const objectMapperV2 = new ObjectMapper<InputV1, OutputV2>(
+      {
+        out1: objectMapperV1.schema.out1,
+        out3: objectMapperV1.schema.out2,
+      },
+    );
 
     const expectedOutput1: OutputV1 = {
       out1: "HELLO",
@@ -320,7 +326,7 @@ describe(`ObjectMapper`, () => {
     });
   });
 
-  it(`LIMITATION: does not error when destructuring another schema with unwanted properties`, () => {
+  it(`LIMITATION: does not allow destructuring another schema`, () => {
     interface InputV1 {
       in1: string;
       in2: number;
@@ -340,17 +346,28 @@ describe(`ObjectMapper`, () => {
       out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
       out2: "in2",
     });
-    const objectMapperV2Bad = new ObjectMapper<InputV1, OutputV2>({
-      ...objectMapperV1.schema,
-      out3: "in2",
-    });
+    const objectMapperV2Bad = new ObjectMapper<InputV1, OutputV2>(
+      // @ts-expect-error: You can't destructure an existing schema, it will introduce unwanted properties
+      {
+        ...objectMapperV1.schema,
+        out3: "in2",
+      },
+    );
+
+    new ObjectMapper<InputV1, OutputV2>(
+      // @ts-expect-error: You can't use "omit", because the object still includes the brand
+      {
+        ...omit(objectMapperV1.schema, ["out2"]),
+        out3: objectMapperV1.schema.out2,
+      },
+    );
 
     expect(objectMapperV2Bad.map({
       in1: "foo",
       in2: 123,
     })).toStrictEqual({
       out1: "FOO",
-      out2: 123, // <-- DEFECT
+      out2: 123, // <-- DEFECT: unwanted property
       out3: 123,
     });
   });

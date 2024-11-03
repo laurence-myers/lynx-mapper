@@ -184,6 +184,11 @@ function isProbablyKeyof<TObject>(
   return typeof value === "string";
 }
 
+// Advanced Branded Type to prevent accidental schema reuse
+export type BrandedSchema<T> = T & { readonly __objectMapperSchema: true };
+
+export type UnbrandedSchema<T> = T & { readonly __objectMapperSchema?: never };
+
 /**
  * Convert from one type of object to another.
  *
@@ -255,6 +260,10 @@ export class ObjectMapper<
   TOutput extends object,
   TContext extends object | undefined = undefined,
 > {
+  public readonly schema: BrandedSchema<
+    ObjectMapperSchema<TInput, TOutput, TContext>
+  >;
+
   /**
    * For faster runtime performance, the object mapper schema is converted to
    *  a Map instance.
@@ -269,12 +278,15 @@ export class ObjectMapper<
     /**
      * Defines how to populate property on the output type.
      */
-    public readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>,
+    schema: UnbrandedSchema<ObjectMapperSchema<TInput, TOutput, TContext>>,
   ) {
+    this.schema = schema as unknown as BrandedSchema<
+      ObjectMapperSchema<TInput, TOutput, TContext>
+    >;
     this.schemaMap = new Map<
       keyof TOutput,
       MapperSchemaValue<TInput, TOutput, TContext>
-    >(Object.entries(this.schema) as [
+    >(Object.entries(schema) as [
       keyof TOutput,
       MapperSchemaValue<TInput, TOutput, TContext>,
     ][]);
