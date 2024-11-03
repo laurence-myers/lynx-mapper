@@ -14,8 +14,8 @@ export interface MapperFunction<
   TContext extends object | undefined,
   TOutputKey extends keyof TOutput = keyof TOutput,
 > {
-  (
-    input: TInput,
+  <TInputSubset extends TInput>(
+    input: TInputSubset,
     context: OptionalArgIfUndefined<TContext>,
   ): TOutput[TOutputKey] | AllowOmitIfOptional<TOutput, TOutputKey>;
 }

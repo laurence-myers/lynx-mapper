@@ -278,7 +278,7 @@ describe(`ObjectMapper`, () => {
     })).toStrictEqual(expectedOutput2);
   });
 
-  it(`LIMITATION: can reuse a mapper function for a different input type, but not directly from the schema`, () => {
+  it(`can reuse a mapper function for a different input type`, () => {
     interface InputV1 {
       in1: string;
       in2: number;
@@ -300,8 +300,13 @@ describe(`ObjectMapper`, () => {
     });
 
     new ObjectMapper<InputV2, Output>({
-      // @ts-expect-error: The V1 mapper requires a V1 input, which isn't compatible with a V2 input
       out1: objectMapperV1.schema.out1,
+      out2: mapFrom.undefined,
+    });
+
+    new ObjectMapper<InputV2, Output>({
+      // @ts-expect-error: the mapper function for "out2" isn't compatible with the "out1" mapper function
+      out1: objectMapperV1.schema.out2,
       out2: mapFrom.undefined,
     });
 
@@ -310,7 +315,7 @@ describe(`ObjectMapper`, () => {
     }
 
     new ObjectMapper<InputV2, Output>({
-      out1: getIn1, // This works, because it's a more specific type
+      out1: getIn1, // This also works
       out2: mapFrom.undefined,
     });
   });
