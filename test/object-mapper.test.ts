@@ -320,6 +320,41 @@ describe(`ObjectMapper`, () => {
     });
   });
 
+  it(`LIMITATION: does not error when destructuring another schema with unwanted properties`, () => {
+    interface InputV1 {
+      in1: string;
+      in2: number;
+    }
+
+    interface OutputV1 {
+      out1: string;
+      out2: number;
+    }
+
+    interface OutputV2 {
+      out1: string;
+      out3: number;
+    }
+
+    const objectMapperV1 = new ObjectMapper<InputV1, OutputV1>({
+      out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
+      out2: "in2",
+    });
+    const objectMapperV2Bad = new ObjectMapper<InputV1, OutputV2>({
+      ...objectMapperV1.schema,
+      out3: "in2",
+    });
+
+    expect(objectMapperV2Bad.map({
+      in1: "foo",
+      in2: 123,
+    })).toStrictEqual({
+      out1: "FOO",
+      out2: 123, // <-- DEFECT
+      out3: 123,
+    });
+  });
+
   describe(`nested objects`, () => {
     interface Input {
       foo: string;
