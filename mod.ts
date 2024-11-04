@@ -2,8 +2,6 @@
  * "Exhaustive" object mapper.
  *
  * @example ```ts
- * import { mapFrom, ObjectMapper, OmitProperty } from "./";
- *
  * // Set up the types and object mapper.
  *
  * // This will be our input type. It could represent some database row.
