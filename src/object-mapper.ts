@@ -14,9 +14,9 @@ export interface MapperFunction<
   TContext extends object | undefined,
   TOutputKey extends keyof TOutput = keyof TOutput,
 > {
-  <TInputSubset extends TInput>(
+  <TInputSubset extends TInput, TContextSubset extends TContext>(
     input: TInputSubset,
-    context: OptionalArgIfUndefined<TContext>,
+    context: OptionalArgIfUndefined<TContextSubset>,
   ): TOutput[TOutputKey] | AllowOmitIfOptional<TOutput, TOutputKey>;
 }
 
@@ -26,7 +26,7 @@ export interface MapperFunction<
  *
  * @private
  * @example
- * ```typescript
+ * ```ts
  * import { AllowInputKeyIfInputCanExtendOutput } from "./object-mapper.ts";
  *
  * interface SomeInput {
@@ -184,11 +184,6 @@ function isProbablyKeyof<TObject>(
   return typeof value === "string";
 }
 
-// Advanced Branded Type to prevent accidental schema reuse
-export type BrandedSchema<T> = T & { readonly __objectMapperSchema: true };
-
-export type UnbrandedSchema<T> = T & { readonly __objectMapperSchema?: never };
-
 /**
  * Convert from one type of object to another.
  *
@@ -220,7 +215,7 @@ export type UnbrandedSchema<T> = T & { readonly __objectMapperSchema?: never };
  *   outNumber: number;
  * }
  *
- * const objectMapper = new ObjectMapper<Input, Output>({
+ * const objectMapper = ObjectMapper.create<Input, Output>()({
  *   outString: "inString",
  *   outNumber: (input) => input.inNumber * 100,
  * });
@@ -240,7 +235,7 @@ export type UnbrandedSchema<T> = T & { readonly __objectMapperSchema?: never };
  *   multiplier: number,
  * }
  *
- * const objectMapperWithContext = new ObjectMapper<Input, Output, Context>({
+ * const objectMapperWithContext = ObjectMapper.create<Input, Output, Context>()({
  *   outString: "inString",
  *   outNumber: (input, context) => input.inNumber * context.multiplier,
  * });
@@ -260,29 +255,65 @@ export class ObjectMapper<
   TOutput extends object,
   TContext extends object | undefined = undefined,
 > {
-  public readonly schema: BrandedSchema<
-    ObjectMapperSchema<TInput, TOutput, TContext>
-  >;
+  /**
+   * There's a chance you can pass an ObjectMapperSchema with more properties than you
+   *  expect. This can happen if you use the spread operator to re-use some other schema.
+   *  To catch this issue, call this function with the type parameters for the object
+   *  mapper schema, and immediately call the returned function, passing your object
+   *  mapper schema.
+   *
+   *  @example ```ts
+   *  const mapper1 = ObjectMapper.create<{ in1: string }, { out1: string; out2: string }>()({
+   *    out1: "in1",
+   *    out2: "in1",
+   *  });
+   *
+   *  // const mapper2 = ObjectMapper.create<{ in1: string }, { out1: string; out3: string }>()({
+   *  //   ...mapper1.schema, // error, "out2" is present but shouldn't be
+   *  //   out3: "in1",
+   *  // });
+   *  ```
+   */
+  public static create<
+    TInput extends object,
+    TOutput extends object,
+    TContext extends object | undefined = undefined,
+  >() {
+    type TDesiredSchema = ObjectMapperSchema<TInput, TOutput, TContext>;
+    return function <
+      TActualSchema extends
+        & TDesiredSchema
+        & {
+          [
+            P in Exclude<
+              keyof TActualSchema,
+              keyof TDesiredSchema
+            >
+          ]: never;
+        },
+    >(
+      schema: TActualSchema,
+    ): ObjectMapper<TInput, TOutput, TContext> {
+      return new ObjectMapper<TInput, TOutput, TContext>(schema);
+    };
+  }
 
   /**
    * For faster runtime performance, the object mapper schema is converted to
    *  a Map instance.
    * @private
    */
-  private readonly schemaMap: Map<
+  protected readonly schemaMap: Map<
     keyof TOutput,
     MapperSchemaValue<TInput, TOutput, TContext>
   >;
 
-  constructor(
+  protected constructor(
     /**
      * Defines how to populate property on the output type.
      */
-    schema: UnbrandedSchema<ObjectMapperSchema<TInput, TOutput, TContext>>,
+    public readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>,
   ) {
-    this.schema = schema as unknown as BrandedSchema<
-      ObjectMapperSchema<TInput, TOutput, TContext>
-    >;
     this.schemaMap = new Map<
       keyof TOutput,
       MapperSchemaValue<TInput, TOutput, TContext>
@@ -438,7 +469,7 @@ export class ObjectMapper<
    *   out: string;
    * }
    *
-   * const mapObject = (new ObjectMapper<Input, Output>({
+   * const mapObject = (ObjectMapper.create<Input, Output>()({
    *   out: "in",
    * })).toFunction();
    *

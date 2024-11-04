@@ -48,7 +48,7 @@ describe(`ObjectMapper`, () => {
 
   it(`can map values using strings for property names on the input object`, () => {
     // Setup
-    const objectMapper = new ObjectMapper<Input, Output>({
+    const objectMapper = ObjectMapper.create<Input, Output>()({
       outString: "inString",
       outStringConstant: mapFrom.constant("someConstantValue"), // no input value
       outStringNullable: "inStringNullable",
@@ -94,7 +94,7 @@ describe(`ObjectMapper`, () => {
       return input.inStringNullable;
     }
 
-    const objectMapper = new ObjectMapper<Input, Output>({
+    const objectMapper = ObjectMapper.create<Input, Output>()({
       outString: (input) => input.inString,
       outStringConstant: () => "someConstantValue",
       outStringNullable: mapInStringNullable,
@@ -137,11 +137,11 @@ describe(`ObjectMapper`, () => {
 
   it(`can map values using functions, with an additional context object`, () => {
     // Setup
-    const objectMapper = new ObjectMapper<
+    const objectMapper = ObjectMapper.create<
       Pick<Input, "inString">,
       Pick<Output, "outString">,
       { inStringOverride: string }
-    >({
+    >()({
       outString: (_, context) => context.inStringOverride,
     });
 
@@ -166,7 +166,7 @@ describe(`ObjectMapper`, () => {
 
   it(`cannot use the name of a property where the input type is a superset of the output type`, () => {
     // Setup
-    new ObjectMapper<Input, Output>({
+    ObjectMapper.create<Input, Output>()({
       // @ts-expect-error TS2322 The input value can't be `undefined` if the output value is `string`
       outString: "inStringUndefined",
       // @ts-expect-error TS2322 `undefined` is not compatible with string/null.
@@ -183,7 +183,7 @@ describe(`ObjectMapper`, () => {
 
   it(`cannot use functions returning a superset of the output type`, () => {
     // Setup
-    new ObjectMapper<Input, Pick<Output, "outString">>({
+    ObjectMapper.create<Input, Pick<Output, "outString">>()({
       // @ts-expect-error TS2322 The input value can't be `undefined` if the output value is `string`
       outString: (input) => input.inStringUndefined,
     });
@@ -191,7 +191,7 @@ describe(`ObjectMapper`, () => {
 
   it(`can convert an ObjectMapper instance into a function`, () => {
     // Setup
-    const objectMapperInstance = new ObjectMapper<Input, Output>({
+    const objectMapperInstance = ObjectMapper.create<Input, Output>()({
       outString: "inString",
       outStringConstant: mapFrom.constant("someConstantValue"),
       outStringNullable: mapFrom.null,
@@ -240,6 +240,10 @@ describe(`ObjectMapper`, () => {
       in2: number;
     }
 
+    interface InputV2 extends InputV1 {
+      in3: string;
+    }
+
     interface OutputV1 {
       out1: string;
       out2: number;
@@ -250,15 +254,17 @@ describe(`ObjectMapper`, () => {
       out3: number;
     }
 
-    const objectMapperV1 = new ObjectMapper<InputV1, OutputV1>({
+    const objectMapperV1 = ObjectMapper.create<InputV1, OutputV1>()({
       out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
       out2: "in2",
     });
-    new ObjectMapper<InputV1, OutputV1>(
-      // @ts-expect-error: you can't re-use a schema directly
+
+    // You can reuse an existing schema, if the inputs and outputs are compatible with the existing schema
+    ObjectMapper.create<InputV2, OutputV1>()(
       objectMapperV1.schema,
     );
-    const objectMapperV2 = new ObjectMapper<InputV1, OutputV2>(
+
+    const objectMapperV2 = ObjectMapper.create<InputV1, OutputV2>()(
       {
         out1: objectMapperV1.schema.out1,
         out3: objectMapperV1.schema.out2,
@@ -300,17 +306,17 @@ describe(`ObjectMapper`, () => {
       out2?: number;
     }
 
-    const objectMapperV1 = new ObjectMapper<InputV1, Output>({
+    const objectMapperV1 = ObjectMapper.create<InputV1, Output>()({
       out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
       out2: "in2",
     });
 
-    new ObjectMapper<InputV2, Output>({
+    ObjectMapper.create<InputV2, Output>()({
       out1: objectMapperV1.schema.out1,
       out2: mapFrom.undefined,
     });
 
-    new ObjectMapper<InputV2, Output>({
+    ObjectMapper.create<InputV2, Output>()({
       // @ts-expect-error: the mapper function for "out2" isn't compatible with the "out1" mapper function
       out1: objectMapperV1.schema.out2,
       out2: mapFrom.undefined,
@@ -320,13 +326,13 @@ describe(`ObjectMapper`, () => {
       return input.in1.toUpperCase();
     }
 
-    new ObjectMapper<InputV2, Output>({
+    ObjectMapper.create<InputV2, Output>()({
       out1: getIn1, // This also works
       out2: mapFrom.undefined,
     });
   });
 
-  it(`LIMITATION: does not allow destructuring another schema`, () => {
+  it(`allows destructuring another schema`, () => {
     interface InputV1 {
       in1: string;
       in2: number;
@@ -342,20 +348,19 @@ describe(`ObjectMapper`, () => {
       out3: number;
     }
 
-    const objectMapperV1 = new ObjectMapper<InputV1, OutputV1>({
+    const objectMapperV1 = ObjectMapper.create<InputV1, OutputV1>()({
       out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
       out2: "in2",
     });
-    const objectMapperV2Bad = new ObjectMapper<InputV1, OutputV2>(
-      // @ts-expect-error: You can't destructure an existing schema, it will introduce unwanted properties
+    const objectMapperV2Bad = ObjectMapper.create<InputV1, OutputV2>()(
+      // @ts-expect-error: The destructured schema includes `out2`, which we don't want
       {
         ...objectMapperV1.schema,
         out3: "in2",
       },
     );
 
-    new ObjectMapper<InputV1, OutputV2>(
-      // @ts-expect-error: You can't use "omit", because the object still includes the brand
+    ObjectMapper.create<InputV1, OutputV2>()(
       {
         ...omit(objectMapperV1.schema, ["out2"]),
         out3: objectMapperV1.schema.out2,
@@ -395,11 +400,14 @@ describe(`ObjectMapper`, () => {
         foo: "fooValue",
       };
 
-      const nestedObjectMapper = new ObjectMapper<NestedInput, NestedOutput>({
+      const nestedObjectMapper = ObjectMapper.create<
+        NestedInput,
+        NestedOutput
+      >()({
         bar: "baz",
       });
 
-      const mapper = new ObjectMapper<Input, Output>({
+      const mapper = ObjectMapper.create<Input, Output>()({
         nested: (input: Input) => nestedObjectMapper.map({ baz: input.foo }),
       });
 
@@ -424,16 +432,16 @@ describe(`ObjectMapper`, () => {
         foo: "fooValue",
       };
 
-      const nestedObjectMapper = new ObjectMapper<
+      const nestedObjectMapper = ObjectMapper.create<
         NestedInput,
         NestedOutput,
         NestedContext
-      >({
+      >()({
         bar: (input, context) =>
           context.capitalize ? input.baz.toUpperCase() : input.baz,
       });
 
-      const mapper = new ObjectMapper<Input, Output>({
+      const mapper = ObjectMapper.create<Input, Output>()({
         nested: (input: Input) =>
           nestedObjectMapper.map({ baz: input.foo }, { capitalize: true }),
       });
@@ -475,11 +483,14 @@ describe(`ObjectMapper`, () => {
         ],
       };
 
-      const nestedObjectMapper = new ObjectMapper<NestedInput, NestedOutput>({
+      const nestedObjectMapper = ObjectMapper.create<
+        NestedInput,
+        NestedOutput
+      >()({
         outputValue: "inputValue",
       });
 
-      const mapper = new ObjectMapper<Input, Output>({
+      const mapper = ObjectMapper.create<Input, Output>()({
         outputArray: (input) => nestedObjectMapper.array(input.inputArray),
       });
 
@@ -507,19 +518,22 @@ describe(`ObjectMapper`, () => {
         optional?: NestedOutput;
       }
 
-      const nestedObjectMapper = new ObjectMapper<NestedInput, NestedOutput>({
+      const nestedObjectMapper = ObjectMapper.create<
+        NestedInput,
+        NestedOutput
+      >()({
         bar: "baz",
       });
 
       // Setup
-      new ObjectMapper<Input, Output>({
+      ObjectMapper.create<Input, Output>()({
         nullable: (input) => nestedObjectMapper.map(input.nullable),
         nullableOptional: (input) =>
           nestedObjectMapper.map(input.nullableOptional),
         optional: (input) => nestedObjectMapper.map(input.optional),
       });
 
-      new ObjectMapper<Input, Output>({
+      ObjectMapper.create<Input, Output>()({
         // @ts-expect-error Can't return undefined for a nullable output
         nullable: (input) => nestedObjectMapper.map(input.optional),
         nullableOptional: (input) =>
@@ -542,19 +556,22 @@ describe(`ObjectMapper`, () => {
         optional?: NestedOutput[];
       }
 
-      const nestedObjectMapper = new ObjectMapper<NestedInput, NestedOutput>({
+      const nestedObjectMapper = ObjectMapper.create<
+        NestedInput,
+        NestedOutput
+      >()({
         bar: "baz",
       });
 
       // Setup
-      new ObjectMapper<Input, Output>({
+      ObjectMapper.create<Input, Output>()({
         nullable: (input) => nestedObjectMapper.array(input.nullable),
         nullableOptional: (input) =>
           nestedObjectMapper.array(input.nullableOptional),
         optional: (input) => nestedObjectMapper.array(input.optional),
       });
 
-      new ObjectMapper<Input, Output>({
+      ObjectMapper.create<Input, Output>()({
         // @ts-expect-error Can't return undefined for a nullable output
         nullable: (input) => nestedObjectMapper.array(input.optional),
         nullableOptional: (input) =>

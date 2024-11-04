@@ -2,6 +2,10 @@
  * "Exhaustive" object mapper.
  *
  * @example ```ts
+ * import { mapFrom } from "./src/map-from.ts";
+ * import { ObjectMapper } from "./src/object-mapper.ts";
+ * import { OmitProperty } from "./src/omit-property.ts";
+ *
  * // Set up the types and object mapper.
  *
  * // This will be our input type. It could represent some database row.
@@ -25,9 +29,12 @@
  *   requesterAccess: 'admin' | 'user';
  * }
  *
- * // We create an instance of `ObjectMapper`. You should only do this once, not
- * //  every time you want to map an object.
- * const objectMapper = new ObjectMapper<UserEntity, UserDto, UserMappingContext>({
+ * // We create an instance of `ObjectMapper` by calling `ObjectMapper.create()({ ... })`.
+ * //  Yes, that's a double-function-call. `ObjectMapper.create()` returns a function, which
+ * //  accepts a schema, and returns an `ObjectMapper`. This is to make use of a neat type-safety trick.
+ * //  You should only create one global instance, you don't need to create one each time you
+ * //  want to map an object.
+ * const objectMapper = ObjectMapper.create<UserEntity, UserDto, UserMappingContext>()({
  *   // A mapper function with some logic
  *   fullName: (input) => `${input.firstName} ${input.lastName}`,
  *   // A mapper function that uses context
@@ -43,13 +50,13 @@
  * const userEntity: UserEntity = {
  *   email: "bobt@pinafore.cruise",
  *   firstName: "Bob",
- *   lastname: "Terwilliger",
+ *   lastName: "Terwilliger",
  *   permissions: ["delete"],
  *   username: "bterwilliger",
  * };
  *
  * // This mapper uses a context.
- * const context = {
+ * const context: UserMappingContext = {
  *   requesterAccess: 'admin'
  * };
  *
@@ -67,7 +74,7 @@
  *
  * // Mapper functions can be reused from an existing mapper's schema.
  * // Also, context is optional.
- * const objectMapperNoContext = new ObjectMapper<UserEntity, UserDto>({
+ * const objectMapperNoContext = ObjectMapper.create<UserEntity, UserDto>()({
  *   fullName: objectMapper.schema.fullName,
  *   permissions: mapFrom.omit,
  *   username: objectMapper.schema.username,
@@ -213,7 +220,7 @@
  *   }
  * }
  *
- * function mapUserEntityToUserDto(input: UserEntity): UserDto {
+ * function mapUserEntityToUserDto(input: UserEntity, context: UserMappingContext): UserDto {
  *   return new UserDtoImplSeparateArgs(
  *     `${input.firstName} ${input.lastName}`,
  *     context.requesterAccess === 'admin' ? input.permissions : undefined,
