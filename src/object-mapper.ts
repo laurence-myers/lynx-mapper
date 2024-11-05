@@ -28,10 +28,14 @@ interface ObjectMapperFunctionBeingBuilt<
  *
  * @private
  */
-function isProbablyKeyof<TObject>(
-  value: keyof TObject | unknown,
-): value is keyof TObject {
-  return typeof value === "string";
+function isMapperFunction<
+  TInput extends object,
+  TOutput extends object,
+  TContext extends object | undefined = undefined,
+>(
+  value: MapperSchemaValue<TInput, TOutput, TContext>,
+): value is MapperFunction<TInput, TOutput, TContext> {
+  return typeof value === "function";
 }
 
 /**
@@ -293,12 +297,10 @@ export class ObjectMapper<
     // Unsafe stuff happens here
     const output: Record<string, unknown> = {};
     for (const [key, getterOrString] of this.schemaMap) {
-      if (isProbablyKeyof<TOutput>(getterOrString)) {
+      if (!isMapperFunction(getterOrString)) {
         output[key as string] = input[getterOrString];
       } else {
-        const mappedValue = (
-          getterOrString as MapperFunction<TInput, TOutput, TContext>
-        )(input, context);
+        const mappedValue = getterOrString(input, context);
         if (mappedValue !== OmitProperty) {
           output[key as string] = mappedValue;
         }
