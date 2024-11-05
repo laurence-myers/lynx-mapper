@@ -1,5 +1,6 @@
 /**
- * "Exhaustive" object mapper.
+ * "Exhaustive", type-safe object mapper. Use this when you want to ensure every
+ * property on your output object has been mapped.
  *
  * @example ```ts
  * import { mapFrom } from "./src/map-from.ts";
@@ -84,6 +85,11 @@
  * console.log(outputDto3);
  * // --> { fullName: "Bob Terwilliger", username: "bterwilliger" }
  * ```
+ *
+ * There is a separate `AsyncObjectMapper`, which uses Promises and async/await,
+ *  for each mapper function. (However, I recommend performing your async
+ *  operations before mapping, and putting values in the mapper context,
+ *  to avoid side effects and make testing easier.)
  *
  * ---
  *
@@ -244,7 +250,10 @@
  * @module
  */
 
+export * from "./src/async-object-mapper.ts";
 export * from "./src/map-from.ts";
+export * from "./src/map-from-async.ts";
 export * from "./src/object-mapper.ts";
 export * from "./src/omit-property.ts";
+export * as asyncTypes from "./src/async-types.ts";
 export * as types from "./src/types.ts";

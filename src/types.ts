@@ -1,6 +1,6 @@
 /**
- * These types are used by the ObjectMapper. Here's all the magic which makes sure
- *  your object schemas are type safe and complete. You generally won't need to
+ * These types are used by the ObjectMapper. Here's the magic which makes
+ *  object mapper schemas type safe and complete. You generally won't need to
  *  make use of these types within your own code; just `ObjectMapper` should be
  *  enough.
  *
@@ -59,7 +59,11 @@ export type AllowInputKeyIfInputCanExtendOutput<TInput, TOutputValue> = {
     : never;
 }[keyof TInput];
 
-type AllowOmitIfOptional<
+/**
+ * Lots you use the special symbol `OmitProperty` in place of an optional/undefined value.
+ * @private
+ */
+export type AllowOmitIfOptional<
   TOutput extends object,
   TOutputKey extends keyof TOutput,
 > = {

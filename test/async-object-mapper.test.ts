@@ -1,8 +1,9 @@
+// deno-lint-ignore-file require-await
 import { describe, it } from "jsr:@std/testing/bdd";
 import { expect } from "jsr:@std/expect";
-import { ObjectMapper } from "../src/object-mapper.ts";
-import { mapFrom } from "../src/map-from.ts";
+import { AsyncObjectMapper } from "../src/async-object-mapper.ts";
 import { OmitProperty } from "../src/omit-property.ts";
+import { mapFromAsync } from "../src/map-from-async.ts";
 
 function omit<TObject extends object, TKeys extends keyof TObject>(
   obj: TObject,
@@ -24,7 +25,7 @@ function stringCounter(start = 0): () => string {
   };
 }
 
-describe(ObjectMapper.name, () => {
+describe(AsyncObjectMapper.name, () => {
   interface Input {
     inString: string;
     inStringNullable: string | null;
@@ -46,11 +47,11 @@ describe(ObjectMapper.name, () => {
     outStringOptionalNullableUndefined?: string | null | undefined;
   }
 
-  it(`can map values using strings for property names on the input object`, () => {
+  it(`can map values using strings for property names on the input object`, async () => {
     // Setup
-    const objectMapper = ObjectMapper.create<Input, Output>()({
+    const objectMapper = AsyncObjectMapper.create<Input, Output>()({
       outString: "inString",
-      outStringConstant: mapFrom.constant("someConstantValue"), // no input value
+      outStringConstant: mapFromAsync.constant("someConstantValue"), // no input value
       outStringNullable: "inStringNullable",
       outStringNullableUndefined: "inStringNullableUndefined",
       outStringOptional: "inStringOptional",
@@ -71,7 +72,7 @@ describe(ObjectMapper.name, () => {
     };
 
     // Execute
-    const output = objectMapper.map(input);
+    const output = await objectMapper.map(input);
 
     // Verify
     expect(output).toStrictEqual({
@@ -86,24 +87,26 @@ describe(ObjectMapper.name, () => {
     });
   });
 
-  it(`can map values using functions`, () => {
+  it(`can map values using functions`, async () => {
     // Setup
-    function mapInStringNullable(
+    async function mapInStringNullable(
       input: Pick<Input, "inStringNullable">,
-    ): string | null {
+    ): Promise<string | null> {
       return input.inStringNullable;
     }
 
-    const objectMapper = ObjectMapper.create<Input, Output>()({
-      outString: (input) => input.inString,
-      outStringConstant: () => "someConstantValue",
+    const objectMapper = AsyncObjectMapper.create<Input, Output>()({
+      outString: async (input) => input.inString,
+      outStringConstant: async () => "someConstantValue",
       outStringNullable: mapInStringNullable,
-      outStringNullableUndefined: (input) => input.inStringNullableUndefined,
-      outStringOptional: (input) => input.inStringOptional,
-      outStringOptionalNullable: (input) => input.inStringOptionalNullable,
-      outStringOptionalNullableUndefined: (input) =>
+      outStringNullableUndefined: async (input) =>
+        input.inStringNullableUndefined,
+      outStringOptional: async (input) => input.inStringOptional,
+      outStringOptionalNullable: async (input) =>
+        input.inStringOptionalNullable,
+      outStringOptionalNullableUndefined: async (input) =>
         input.inStringOptionalNullableUndefined,
-      outStringUndefined: (input) => input.inStringUndefined,
+      outStringUndefined: async (input) => input.inStringUndefined,
     });
 
     const nextString = stringCounter();
@@ -119,7 +122,7 @@ describe(ObjectMapper.name, () => {
     const context = undefined;
 
     // Execute
-    const output = objectMapper.map(input, context);
+    const output = await objectMapper.map(input, context);
 
     // Verify
     const expected = {
@@ -135,14 +138,14 @@ describe(ObjectMapper.name, () => {
     expect(output).toStrictEqual(expected);
   });
 
-  it(`can map values using functions, with an additional context object`, () => {
+  it(`can map values using functions, with an additional context object`, async () => {
     // Setup
-    const objectMapper = ObjectMapper.create<
+    const objectMapper = AsyncObjectMapper.create<
       Pick<Input, "inString">,
       Pick<Output, "outString">,
       { inStringOverride: string }
     >()({
-      outString: (_, context) => context.inStringOverride,
+      outString: async (_, context) => context.inStringOverride,
     });
 
     const nextString = stringCounter();
@@ -155,9 +158,8 @@ describe(ObjectMapper.name, () => {
 
     // Execute
     // @ts-expect-error TS2554 If a context type is not `undefined`, a context must be provided.
-    const failingCall = () => objectMapper.map(input);
-    expect(failingCall).toThrow(TypeError);
-    const output = objectMapper.map(input, context);
+    expect(objectMapper.map(input)).rejects.toThrow(TypeError);
+    const output = await objectMapper.map(input, context);
 
     // Verify
     expect(output.outString).not.toEqual(input.inString);
@@ -166,7 +168,7 @@ describe(ObjectMapper.name, () => {
 
   it(`cannot use the name of a property where the input type is a superset of the output type`, () => {
     // Setup
-    ObjectMapper.create<Input, Output>()({
+    AsyncObjectMapper.create<Input, Output>()({
       // @ts-expect-error TS2322 The input value can't be `undefined` if the output value is `string`
       outString: "inStringUndefined",
       // @ts-expect-error TS2322 `undefined` is not compatible with string/null.
@@ -177,27 +179,27 @@ describe(ObjectMapper.name, () => {
       outStringOptionalNullable: "inStringUndefined",
       outStringOptionalNullableUndefined: "inString", // this is okay, it's a subset
       // @ts-expect-error TS2322 Properties can only be omitted if they are optional, not `undefined`
-      outStringUndefined: mapFrom.omit,
+      outStringUndefined: mapFromAsync.omit,
     });
   });
 
   it(`cannot use functions returning a superset of the output type`, () => {
     // Setup
-    ObjectMapper.create<Input, Pick<Output, "outString">>()({
+    AsyncObjectMapper.create<Input, Pick<Output, "outString">>()({
       // @ts-expect-error TS2322 The input value can't be `undefined` if the output value is `string`
       outString: (input) => input.inStringUndefined,
     });
   });
 
-  it(`can convert an ObjectMapper instance into a function`, () => {
+  it(`can convert an ObjectMapper instance into a function`, async () => {
     // Setup
-    const objectMapperInstance = ObjectMapper.create<Input, Output>()({
+    const objectMapperInstance = AsyncObjectMapper.create<Input, Output>()({
       outString: "inString",
-      outStringConstant: mapFrom.constant("someConstantValue"),
-      outStringNullable: mapFrom.null,
-      outStringNullableUndefined: mapFrom.undefined,
-      outStringOptional: mapFrom.omit,
-      outStringOptionalNullable: () => OmitProperty,
+      outStringConstant: mapFromAsync.constant("someConstantValue"),
+      outStringNullable: mapFromAsync.null,
+      outStringNullableUndefined: mapFromAsync.undefined,
+      outStringOptional: mapFromAsync.omit,
+      outStringOptionalNullable: async () => OmitProperty,
       outStringOptionalNullableUndefined: "inStringOptionalNullableUndefined",
       outStringUndefined: "inStringUndefined",
     });
@@ -216,8 +218,8 @@ describe(ObjectMapper.name, () => {
 
     // Execute
     const objectMapperFunction = objectMapperInstance.toFunction();
-    objectMapperFunction(input, context); // accepts context of "undefined"
-    const output = objectMapperFunction(input); // accepts no context arg
+    await objectMapperFunction(input, context); // accepts context of "undefined"
+    const output = await objectMapperFunction(input); // accepts no context arg
 
     // Verify
     const expected: Output = {
@@ -234,7 +236,7 @@ describe(ObjectMapper.name, () => {
     expect(objectMapperFunction.schema).toBe(objectMapperInstance.schema);
   });
 
-  it(`can reuse schema from an existing mapper`, () => {
+  it(`can reuse schema from an existing mapper`, async () => {
     interface InputV1 {
       in1: string;
       in2: number;
@@ -254,17 +256,17 @@ describe(ObjectMapper.name, () => {
       out3: number;
     }
 
-    const objectMapperV1 = ObjectMapper.create<InputV1, OutputV1>()({
-      out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
+    const objectMapperV1 = AsyncObjectMapper.create<InputV1, OutputV1>()({
+      out1: async (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
       out2: "in2",
     });
 
     // You can reuse an existing schema, if the inputs and outputs are compatible with the existing schema
-    ObjectMapper.create<InputV2, OutputV1>()(
+    AsyncObjectMapper.create<InputV2, OutputV1>()(
       objectMapperV1.schema,
     );
 
-    const objectMapperV2 = ObjectMapper.create<InputV1, OutputV2>()(
+    const objectMapperV2 = AsyncObjectMapper.create<InputV1, OutputV2>()(
       {
         out1: objectMapperV1.schema.out1,
         out3: objectMapperV1.schema.out2,
@@ -275,19 +277,23 @@ describe(ObjectMapper.name, () => {
       out1: "HELLO",
       out2: 123,
     };
-    expect(objectMapperV1.map({
-      in1: "hello",
-      in2: 123,
-    })).toStrictEqual(expectedOutput1);
+    expect(
+      await objectMapperV1.map({
+        in1: "hello",
+        in2: 123,
+      }),
+    ).toStrictEqual(expectedOutput1);
 
     const expectedOutput2: OutputV2 = {
       out1: "HELLO",
       out3: 123,
     };
-    expect(objectMapperV2.map({
-      in1: "hello",
-      in2: 123,
-    })).toStrictEqual(expectedOutput2);
+    expect(
+      await objectMapperV2.map({
+        in1: "hello",
+        in2: 123,
+      }),
+    ).toStrictEqual(expectedOutput2);
   });
 
   it(`can reuse a mapper function for a different input type`, () => {
@@ -306,33 +312,33 @@ describe(ObjectMapper.name, () => {
       out2?: number;
     }
 
-    const objectMapperV1 = ObjectMapper.create<InputV1, Output>()({
-      out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
+    const objectMapperV1 = AsyncObjectMapper.create<InputV1, Output>()({
+      out1: async (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
       out2: "in2",
     });
 
-    ObjectMapper.create<InputV2, Output>()({
+    AsyncObjectMapper.create<InputV2, Output>()({
       out1: objectMapperV1.schema.out1,
-      out2: mapFrom.undefined,
+      out2: mapFromAsync.undefined,
     });
 
-    ObjectMapper.create<InputV2, Output>()({
+    AsyncObjectMapper.create<InputV2, Output>()({
       // @ts-expect-error: the mapper function for "out2" isn't compatible with the "out1" mapper function
       out1: objectMapperV1.schema.out2,
-      out2: mapFrom.undefined,
+      out2: mapFromAsync.undefined,
     });
 
-    function getIn1(input: Pick<InputV1, "in1">) {
+    async function getIn1(input: Pick<InputV1, "in1">) {
       return input.in1.toUpperCase();
     }
 
-    ObjectMapper.create<InputV2, Output>()({
+    AsyncObjectMapper.create<InputV2, Output>()({
       out1: getIn1, // This also works
-      out2: mapFrom.undefined,
+      out2: mapFromAsync.undefined,
     });
   });
 
-  it(`allows destructuring another schema`, () => {
+  it(`allows destructuring another schema`, async () => {
     interface InputV1 {
       in1: string;
       in2: number;
@@ -348,11 +354,11 @@ describe(ObjectMapper.name, () => {
       out3: number;
     }
 
-    const objectMapperV1 = ObjectMapper.create<InputV1, OutputV1>()({
-      out1: (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
+    const objectMapperV1 = AsyncObjectMapper.create<InputV1, OutputV1>()({
+      out1: async (input: Pick<InputV1, "in1">) => input.in1.toUpperCase(),
       out2: "in2",
     });
-    const objectMapperV2Bad = ObjectMapper.create<InputV1, OutputV2>()(
+    const objectMapperV2Bad = AsyncObjectMapper.create<InputV1, OutputV2>()(
       // @ts-expect-error: The destructured schema includes `out2`, which we don't want
       {
         ...objectMapperV1.schema,
@@ -360,17 +366,19 @@ describe(ObjectMapper.name, () => {
       },
     );
 
-    ObjectMapper.create<InputV1, OutputV2>()(
+    AsyncObjectMapper.create<InputV1, OutputV2>()(
       {
         ...omit(objectMapperV1.schema, ["out2"]),
         out3: objectMapperV1.schema.out2,
       },
     );
 
-    expect(objectMapperV2Bad.map({
-      in1: "foo",
-      in2: 123,
-    })).toStrictEqual({
+    expect(
+      await objectMapperV2Bad.map({
+        in1: "foo",
+        in2: 123,
+      }),
+    ).toStrictEqual({
       out1: "FOO",
       out2: 123, // <-- DEFECT: unwanted property
       out3: 123,
@@ -394,25 +402,26 @@ describe(ObjectMapper.name, () => {
 
     type NestedOutput = Output["nested"];
 
-    it(`requires nested objects to be completely mapped`, () => {
+    it(`requires nested objects to be completely mapped`, async () => {
       // Setup
       const input: Input = {
         foo: "fooValue",
       };
 
-      const nestedObjectMapper = ObjectMapper.create<
+      const nestedObjectMapper = AsyncObjectMapper.create<
         NestedInput,
         NestedOutput
       >()({
         bar: "baz",
       });
 
-      const mapper = ObjectMapper.create<Input, Output>()({
-        nested: (input: Input) => nestedObjectMapper.map({ baz: input.foo }),
+      const mapper = AsyncObjectMapper.create<Input, Output>()({
+        nested: async (input: Input) =>
+          nestedObjectMapper.map({ baz: input.foo }),
       });
 
       // Execute
-      const result = mapper.map(input, undefined);
+      const result = await mapper.map(input, undefined);
 
       // Verify
       expect(result).toStrictEqual({
@@ -422,7 +431,7 @@ describe(ObjectMapper.name, () => {
       });
     });
 
-    it(`can pass a sub-context to the nested mapper`, () => {
+    it(`can pass a sub-context to the nested mapper`, async () => {
       // Setup
       interface NestedContext {
         capitalize: boolean;
@@ -432,22 +441,22 @@ describe(ObjectMapper.name, () => {
         foo: "fooValue",
       };
 
-      const nestedObjectMapper = ObjectMapper.create<
+      const nestedObjectMapper = AsyncObjectMapper.create<
         NestedInput,
         NestedOutput,
         NestedContext
       >()({
-        bar: (input, context) =>
+        bar: async (input, context) =>
           context.capitalize ? input.baz.toUpperCase() : input.baz,
       });
 
-      const mapper = ObjectMapper.create<Input, Output>()({
+      const mapper = AsyncObjectMapper.create<Input, Output>()({
         nested: (input: Input) =>
           nestedObjectMapper.map({ baz: input.foo }, { capitalize: true }),
       });
 
       // Execute
-      const result = mapper.map(input, undefined);
+      const result = await mapper.map(input, undefined);
 
       // Verify
       expect(result).toStrictEqual({
@@ -457,7 +466,7 @@ describe(ObjectMapper.name, () => {
       });
     });
 
-    it(`can map arrays of nested objects`, () => {
+    it(`can map arrays of nested objects`, async () => {
       // Setup
       interface NestedInput {
         inputValue: string;
@@ -483,19 +492,19 @@ describe(ObjectMapper.name, () => {
         ],
       };
 
-      const nestedObjectMapper = ObjectMapper.create<
+      const nestedObjectMapper = AsyncObjectMapper.create<
         NestedInput,
         NestedOutput
       >()({
         outputValue: "inputValue",
       });
 
-      const mapper = ObjectMapper.create<Input, Output>()({
+      const mapper = AsyncObjectMapper.create<Input, Output>()({
         outputArray: (input) => nestedObjectMapper.array(input.inputArray),
       });
 
       // Execute
-      const result = mapper.map(input, undefined);
+      const result = await mapper.map(input, undefined);
 
       // Verify
       expect(result).toStrictEqual({
@@ -518,7 +527,7 @@ describe(ObjectMapper.name, () => {
         optional?: NestedOutput;
       }
 
-      const nestedObjectMapper = ObjectMapper.create<
+      const nestedObjectMapper = AsyncObjectMapper.create<
         NestedInput,
         NestedOutput
       >()({
@@ -526,14 +535,14 @@ describe(ObjectMapper.name, () => {
       });
 
       // Setup
-      ObjectMapper.create<Input, Output>()({
-        nullable: (input) => nestedObjectMapper.map(input.nullable),
+      AsyncObjectMapper.create<Input, Output>()({
+        nullable: async (input) => nestedObjectMapper.map(input.nullable),
         nullableOptional: (input) =>
           nestedObjectMapper.map(input.nullableOptional),
         optional: (input) => nestedObjectMapper.map(input.optional),
       });
 
-      ObjectMapper.create<Input, Output>()({
+      AsyncObjectMapper.create<Input, Output>()({
         // @ts-expect-error Can't return undefined for a nullable output
         nullable: (input) => nestedObjectMapper.map(input.optional),
         nullableOptional: (input) =>
@@ -556,7 +565,7 @@ describe(ObjectMapper.name, () => {
         optional?: NestedOutput[];
       }
 
-      const nestedObjectMapper = ObjectMapper.create<
+      const nestedObjectMapper = AsyncObjectMapper.create<
         NestedInput,
         NestedOutput
       >()({
@@ -564,20 +573,20 @@ describe(ObjectMapper.name, () => {
       });
 
       // Setup
-      ObjectMapper.create<Input, Output>()({
+      AsyncObjectMapper.create<Input, Output>()({
         nullable: (input) => nestedObjectMapper.array(input.nullable),
         nullableOptional: (input) =>
           nestedObjectMapper.array(input.nullableOptional),
         optional: (input) => nestedObjectMapper.array(input.optional),
       });
 
-      ObjectMapper.create<Input, Output>()({
+      AsyncObjectMapper.create<Input, Output>()({
         // @ts-expect-error Can't return undefined for a nullable output
-        nullable: (input) => nestedObjectMapper.array(input.optional),
+        nullable: (input) => nestedAsyncObjectMapper.array(input.optional),
         nullableOptional: (input) =>
           nestedObjectMapper.array(input.nullableOptional),
         // @ts-expect-error Can't return null for an optional output
-        optional: (input) => nestedObjectMapper.array(input.nullable),
+        optional: (input) => nestedAsyncObjectMapper.array(input.nullable),
       });
     });
   });
