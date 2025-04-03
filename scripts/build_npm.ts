@@ -43,13 +43,20 @@ await build({
     },
     version: Deno.args[0],
   },
-  // postBuild() {
-  //   // steps to run after building and before running the tests
-  //   Deno.copyFileSync("LICENSE", "npm/LICENSE");
-  //   Deno.copyFileSync("README.md", "npm/README.md");
-  // },
+  postBuild() {
+    // steps to run after building and before running the tests
+    for (const fileName of ["LICENSE", "README.md"]) {
+      Deno.copyFileSync(fileName, "npm/" + fileName);
+    }
+  },
   shims: {
     deno: "dev",
   },
   rootTestDir: "./tests",
 });
+
+await Deno.writeTextFile(
+  "npm/.npmignore",
+  "package-lock.json\n",
+  { append: true },
+);
