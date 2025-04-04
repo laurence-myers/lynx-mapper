@@ -385,6 +385,53 @@ describe(AsyncObjectMapper.name, () => {
     });
   });
 
+  it(`allows picking properties`, async () => {
+    interface Input {
+      firstName: string;
+      middleNames: string[];
+      lastName: string;
+      age: number;
+      taxFileNumber: string;
+    }
+
+    interface Output {
+      firstName: string;
+      lastName: string;
+      age: number;
+      fullName: string;
+    }
+
+    const objectMapper = AsyncObjectMapper.create<Input, Output>()({
+      ...mapFromAsync.pick('firstName', 'lastName', 'age'),
+      fullName: async (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    expect(await objectMapper.map({
+      firstName: 'Shonky',
+      middleNames: ['The', 'Artful'],
+      lastName: 'Dodger',
+      age: 30,
+      taxFileNumber: '4',
+    })).toStrictEqual({
+      firstName: 'Shonky',
+      lastName: 'Dodger',
+      age: 30,
+      fullName: 'Shonky Dodger',
+    });
+
+    // @ts-expect-error: The schema includes `taxFileNumber`, which we don't want
+    AsyncObjectMapper.create<Input, Output>()({
+      ...mapFromAsync.pick('firstName', 'lastName', 'age', 'taxFileNumber'),
+      fullName: async (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    // @ts-expect-error: The schema includes `blockBusterMembershipNumber`, which doesn't exist in the input
+    AsyncObjectMapper.create<Input, Output>()({
+      ...mapFromAsync.pick('firstName', 'lastName', 'age', 'blockBusterMembershipNumber'),
+      fullName: async (input) => `${input.firstName} ${input.lastName}`,
+    })
+  });
+
   describe(`nested objects`, () => {
     interface Input {
       foo: string;

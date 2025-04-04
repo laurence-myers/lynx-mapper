@@ -1,4 +1,5 @@
 import { OmitProperty } from "./omit-property.ts";
+import { mapFrom } from "./map-from.ts";
 
 /**
  * Provides convenience functions for object mappers.
@@ -62,4 +63,17 @@ export const mapFromAsync = {
   undefined(): Promise<undefined> {
     return Promise.resolve(undefined);
   },
+
+  /**
+   * Maps the specified properties to themselves as is
+   *
+   * ```ts
+   * const objectMapperSchema = {
+   *   ...mapFrom.pick('a', 'b', 'c', 'd'),
+   * }
+   * ```
+   */
+  pick<TKey extends PropertyKey>(...keys: TKey[]) {
+    return mapFrom.pick(...keys);
+  }
 };

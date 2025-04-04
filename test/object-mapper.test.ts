@@ -377,6 +377,53 @@ describe(ObjectMapper.name, () => {
     });
   });
 
+  it(`allows picking properties`, () => {
+    interface Input {
+      firstName: string;
+      middleNames: string[];
+      lastName: string;
+      age: number;
+      taxFileNumber: string;
+    }
+
+    interface Output {
+      firstName: string;
+      lastName: string;
+      age: number;
+      fullName: string;
+    }
+
+    const objectMapper = ObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick('firstName', 'lastName', 'age'),
+      fullName: (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    expect(objectMapper.map({
+      firstName: 'Shonky',
+      middleNames: ['The', 'Artful'],
+      lastName: 'Dodger',
+      age: 30,
+      taxFileNumber: '4',
+    })).toStrictEqual({
+      firstName: 'Shonky',
+      lastName: 'Dodger',
+      age: 30,
+      fullName: 'Shonky Dodger',
+    });
+
+    // @ts-expect-error: The schema includes `taxFileNumber`, which we don't want
+    ObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick('firstName', 'lastName', 'age', 'taxFileNumber'),
+      fullName: (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    // @ts-expect-error: The schema includes `blockBusterMembershipNumber`, which doesn't exist in the input
+    ObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick('firstName', 'lastName', 'age', 'blockBusterMembershipNumber'),
+      fullName: (input) => `${input.firstName} ${input.lastName}`,
+    });
+  });
+
   describe(`nested objects`, () => {
     interface Input {
       foo: string;
