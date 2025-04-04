@@ -377,6 +377,91 @@ describe(ObjectMapper.name, () => {
     });
   });
 
+  it(`allows picking properties`, () => {
+    interface Input {
+      firstName: string;
+      middleNames: string[];
+      lastName: string;
+      age: number;
+      taxFileNumber: string;
+    }
+
+    interface Output {
+      firstName: string;
+      lastName: string;
+      age: number;
+      fullName: string;
+    }
+
+    const objectMapper = ObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick("firstName", "lastName", "age"),
+      fullName: (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    expect(objectMapper.map({
+      firstName: "Shonky",
+      middleNames: ["The", "Artful"],
+      lastName: "Dodger",
+      age: 30,
+      taxFileNumber: "4",
+    })).toStrictEqual({
+      firstName: "Shonky",
+      lastName: "Dodger",
+      age: 30,
+      fullName: "Shonky Dodger",
+    });
+
+    // @ts-expect-error: The schema includes `taxFileNumber`, which we don't want
+    ObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick("firstName", "lastName", "age", "taxFileNumber"),
+      fullName: (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    // @ts-expect-error: The schema includes `blockBusterMembershipNumber`, which doesn't exist in the input
+    ObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick(
+        "firstName",
+        "lastName",
+        "age",
+        "blockBusterMembershipNumber",
+      ),
+      fullName: (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    // @ts-expect-error: The schema excludes fullName, which is required in output
+    ObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick("firstName", "lastName", "age"),
+    });
+  });
+
+  it(`prevents picking properties from input that don't match those in output type`, () => {
+    interface InputV1 {
+      foo: string;
+    }
+
+    interface OutputV1 {
+      foo: number;
+    }
+
+    // @ts-expect-error: The schema includes `foo`, which is incompatible with the output type
+    ObjectMapper.create<InputV1, OutputV1>()({
+      ...mapFrom.pick("foo"),
+    });
+
+    interface InputV2 {
+      foo?: string;
+    }
+
+    interface OutputV2 {
+      foo: string;
+    }
+
+    // @ts-expect-error: The schema includes `foo`, which is incompatible with the output type
+    ObjectMapper.create<InputV2, OutputV2>()({
+      ...mapFrom.pick("foo"),
+    });
+  });
+
   describe(`nested objects`, () => {
     interface Input {
       foo: string;

@@ -51,6 +51,25 @@ export const mapFrom = {
   },
 
   /**
+   * Maps the specified properties to themselves as is
+   *
+   * ```ts
+   * const objectMapperSchema = {
+   *   ...mapFrom.pick('a', 'b', 'c', 'd'),
+   * }
+   * ```
+   */
+  pick<TKey extends PropertyKey>(
+    key: TKey,
+    ...keys: TKey[]
+  ): { [K in TKey]: K } {
+    return [key, ...keys].reduce((acc, key) => {
+      acc[key] = key;
+      return acc;
+    }, {} as { [K in TKey]: K });
+  },
+
+  /**
    * Always map the output value to `undefined`
    *
    * ```ts

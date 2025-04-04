@@ -4,6 +4,7 @@ import { expect } from "jsr:@std/expect";
 import { AsyncObjectMapper } from "../src/async-object-mapper.ts";
 import { OmitProperty } from "../src/omit-property.ts";
 import { mapFromAsync } from "../src/map-from-async.ts";
+import { mapFrom } from "../src/map-from.ts";
 
 function omit<TObject extends object, TKeys extends keyof TObject>(
   obj: TObject,
@@ -382,6 +383,88 @@ describe(AsyncObjectMapper.name, () => {
       out1: "FOO",
       out2: 123, // <-- DEFECT: unwanted property
       out3: 123,
+    });
+  });
+
+  it(`allows picking properties`, async () => {
+    interface Input {
+      firstName: string;
+      middleNames: string[];
+      lastName: string;
+      age: number;
+      taxFileNumber: string;
+    }
+
+    interface Output {
+      firstName: string;
+      lastName: string;
+      age: number;
+      fullName: string;
+    }
+
+    const objectMapper = AsyncObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick("firstName", "lastName", "age"),
+      fullName: async (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    expect(
+      await objectMapper.map({
+        firstName: "Shonky",
+        middleNames: ["The", "Artful"],
+        lastName: "Dodger",
+        age: 30,
+        taxFileNumber: "4",
+      }),
+    ).toStrictEqual({
+      firstName: "Shonky",
+      lastName: "Dodger",
+      age: 30,
+      fullName: "Shonky Dodger",
+    });
+
+    // @ts-expect-error: The schema includes `taxFileNumber`, which we don't want
+    AsyncObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick("firstName", "lastName", "age", "taxFileNumber"),
+      fullName: async (input) => `${input.firstName} ${input.lastName}`,
+    });
+
+    // @ts-expect-error: The schema includes `blockBusterMembershipNumber`, which doesn't exist in the input
+    AsyncObjectMapper.create<Input, Output>()({
+      ...mapFrom.pick(
+        "firstName",
+        "lastName",
+        "age",
+        "blockBusterMembershipNumber",
+      ),
+      fullName: async (input) => `${input.firstName} ${input.lastName}`,
+    });
+  });
+
+  it(`prevents picking properties from input that don't match those in output type`, () => {
+    interface InputV1 {
+      foo: string;
+    }
+
+    interface OutputV1 {
+      foo: number;
+    }
+
+    // @ts-expect-error: The schema includes `foo`, which is incompatible with the output type
+    ObjectMapper.create<InputV1, OutputV1>()({
+      ...mapFrom.pick("foo"),
+    });
+
+    interface InputV2 {
+      foo?: string;
+    }
+
+    interface OutputV2 {
+      foo: string;
+    }
+
+    // @ts-expect-error: The schema includes `foo`, which is incompatible with the output type
+    ObjectMapper.create<InputV2, OutputV2>()({
+      ...mapFrom.pick("foo"),
     });
   });
 
