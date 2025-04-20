@@ -665,5 +665,79 @@ describe(ObjectMapper.name, () => {
         optional: (input) => nestedObjectMapper.array(input.nullable),
       });
     });
+
+    it(`preserves type safety when reusing a destructured schema containing nested objects`, () => {
+      // Setup
+      interface NestedInput1 {
+        bar: string;
+        extraProperty: number
+      }
+
+      interface NestedOutput1 {
+        bar: string;
+        extraProperty: number
+      }
+
+      interface Input1 {
+        foo: string;
+        nested: NestedOutput1;
+      }
+
+      interface Output1 {
+        foo: string;
+        nested: NestedOutput1;
+      }
+
+
+      const nested1Mapper = ObjectMapper.create<
+          NestedInput1,
+          NestedOutput1
+      >()({
+        bar: 'bar',
+        extraProperty: 'extraProperty'
+      });
+
+      const mapper1 = ObjectMapper.create<Input1, Output1>()({
+        foo: 'foo',
+        nested: (input: Input1) => nested1Mapper.map(input.nested),
+      });
+
+      const input: Input1 = {
+        foo: "fooValue",
+        nested: {
+          bar: 'barValue',
+          extraProperty: 123
+        }
+      };
+
+      // Execute
+      mapper1.map(input);
+
+      // Setup 2
+      interface NestedInput2 {
+        bar: string;
+        extraProperty: number
+      }
+
+      interface NestedOutput2 {
+        bar: string;
+      }
+
+      interface Input2 {
+        foo: string;
+        nested: NestedInput2;
+      }
+
+      interface Output2 {
+        foo: string;
+        nested: NestedOutput2;
+      }
+
+      // "Execute"
+      ObjectMapper.create<Input2, Output2>()({
+        // @ts-expect-error TS2322 The `nested` mapper output includes `extraProperty`, which we don't want
+        ...mapper1.schema
+      });
+    });
   });
 });
