@@ -734,9 +734,9 @@ describe(ObjectMapper.name, () => {
       }
 
       // "Execute"
+      // @ts-expect-error TS2345 The `nested` mapper output includes `extraProperty`, which we don't want
       ObjectMapper.create<Input2, Output2>()({
-        // @ts-expect-error TS2322 The `nested` mapper output includes `extraProperty`, which we don't want
-        ...mapper1.schema
+        ...mapper1.schema,
       });
     });
   });

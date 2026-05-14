@@ -1,5 +1,6 @@
 import { OmitProperty } from "./omit-property.ts";
 import type {
+  ExactReturn,
   MapperFunction,
   MapperSchemaValue,
   ObjectMapperFunction,
@@ -17,7 +18,10 @@ interface ObjectMapperFunctionBeingBuilt<
   TOutput extends object,
   TContext extends object | undefined = undefined,
 > {
-  (value: TInput, context: OptionalArgIfUndefined<TContext>): TOutput;
+  (
+    value: TInput,
+    context: OptionalArgIfUndefined<TContext>,
+  ): ExactReturn<TOutput>;
 
   schema: ObjectMapperSchema<TInput, TOutput, TContext>;
 }
@@ -187,7 +191,7 @@ export class ObjectMapper<
   array(
     input: Iterable<TInput>,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput[];
+  ): ExactReturn<TOutput[]>;
   /**
    * Map multiple input objects from some iterable, and return an
    *  array of output objects.
@@ -197,7 +201,7 @@ export class ObjectMapper<
   array(
     input: Iterable<TInput> | null,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput[] | null;
+  ): ExactReturn<TOutput[]> | null;
   /**
    * Map multiple input objects from some iterable, and return an
    *  array of output objects.
@@ -207,7 +211,7 @@ export class ObjectMapper<
   array(
     input: Iterable<TInput> | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput[] | undefined;
+  ): ExactReturn<TOutput[]> | undefined;
   /**
    * Map multiple input objects from some iterable, and return an
    *  array of output objects.
@@ -217,7 +221,7 @@ export class ObjectMapper<
   array(
     input: Iterable<TInput> | null | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput[] | null | undefined;
+  ): ExactReturn<TOutput[]> | null | undefined;
   /**
    * Map multiple input objects from some iterable, and return an
    *  array of output objects.
@@ -227,7 +231,7 @@ export class ObjectMapper<
   array(
     input: Iterable<TInput> | null | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput[] | null | undefined {
+  ): ExactReturn<TOutput[]> | null | undefined {
     if (input === undefined || input === null) {
       return input;
     } else if (Array.isArray(input)) {
@@ -248,7 +252,10 @@ export class ObjectMapper<
    * It does so by iterating each property in the object schema,
    *  and invoking the property's mapping function, passing the input and context.
    */
-  map(input: TInput, context: OptionalArgIfUndefined<TContext>): TOutput;
+  map(
+    input: TInput,
+    context: OptionalArgIfUndefined<TContext>,
+  ): ExactReturn<TOutput>;
   /**
    * Maps an input object to an output object.
    *
@@ -260,7 +267,7 @@ export class ObjectMapper<
   map(
     input: TInput | null,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput | null;
+  ): ExactReturn<TOutput> | null;
   /**
    * Maps an input object to an output object.
    *
@@ -272,7 +279,7 @@ export class ObjectMapper<
   map(
     input: TInput | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput | undefined;
+  ): ExactReturn<TOutput> | undefined;
   /**
    * Maps an input object to an output object.
    *
@@ -284,7 +291,7 @@ export class ObjectMapper<
   map(
     input: TInput | null | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): TOutput | null | undefined;
+  ): ExactReturn<TOutput> | null | undefined;
   /**
    * Maps an input object to an output object.
    *
@@ -293,7 +300,10 @@ export class ObjectMapper<
    *
    * If {@linkcode input} is `null` or `undefined`, it will be returned as-is.
    */
-  map(input: TInput, context: OptionalArgIfUndefined<TContext>): TOutput {
+  map(
+    input: TInput,
+    context: OptionalArgIfUndefined<TContext>,
+  ): ExactReturn<TOutput> {
     if (input === null || input === undefined) {
       return input;
     }
@@ -309,7 +319,7 @@ export class ObjectMapper<
         }
       }
     }
-    return output as TOutput;
+    return output as ExactReturn<TOutput>;
   }
 
   /**
