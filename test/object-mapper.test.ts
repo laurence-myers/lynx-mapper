@@ -670,12 +670,12 @@ describe(ObjectMapper.name, () => {
       // Setup
       interface NestedInput1 {
         bar: string;
-        extraProperty: number
+        extraProperty: number;
       }
 
       interface NestedOutput1 {
         bar: string;
-        extraProperty: number
+        extraProperty: number;
       }
 
       interface Input1 {
@@ -688,26 +688,25 @@ describe(ObjectMapper.name, () => {
         nested: NestedOutput1;
       }
 
-
       const nested1Mapper = ObjectMapper.create<
-          NestedInput1,
-          NestedOutput1
+        NestedInput1,
+        NestedOutput1
       >()({
-        bar: 'bar',
-        extraProperty: 'extraProperty'
+        bar: "bar",
+        extraProperty: "extraProperty",
       });
 
       const mapper1 = ObjectMapper.create<Input1, Output1>()({
-        foo: 'foo',
+        foo: "foo",
         nested: (input: Input1) => nested1Mapper.map(input.nested),
       });
 
       const input: Input1 = {
         foo: "fooValue",
         nested: {
-          bar: 'barValue',
-          extraProperty: 123
-        }
+          bar: "barValue",
+          extraProperty: 123,
+        },
       };
 
       // Execute
@@ -716,7 +715,7 @@ describe(ObjectMapper.name, () => {
       // Setup 2
       interface NestedInput2 {
         bar: string;
-        extraProperty: number
+        extraProperty: number;
       }
 
       interface NestedOutput2 {
