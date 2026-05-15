@@ -450,7 +450,7 @@ describe(AsyncObjectMapper.name, () => {
     }
 
     // @ts-expect-error: The schema includes `foo`, which is incompatible with the output type
-    ObjectMapper.create<InputV1, OutputV1>()({
+    AsyncObjectMapper.create<InputV1, OutputV1>()({
       ...mapFrom.pick("foo"),
     });
 
@@ -463,7 +463,7 @@ describe(AsyncObjectMapper.name, () => {
     }
 
     // @ts-expect-error: The schema includes `foo`, which is incompatible with the output type
-    ObjectMapper.create<InputV2, OutputV2>()({
+    AsyncObjectMapper.create<InputV2, OutputV2>()({
       ...mapFrom.pick("foo"),
     });
   });
