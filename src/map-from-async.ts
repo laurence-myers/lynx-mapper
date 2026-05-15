@@ -17,7 +17,7 @@ export const mapFromAsync = {
    * }
    * ```
    */
-  constant<TValue>(value: TValue): () => Promise<TValue> {
+  constant<TValue>(this: void, value: TValue): () => Promise<TValue> {
     return function constant(): Promise<TValue> {
       return Promise.resolve(value);
     };
@@ -33,7 +33,7 @@ export const mapFromAsync = {
    * }
    * ```
    */
-  omit(): Promise<OmitProperty> {
+  omit(this: void): Promise<OmitProperty> {
     return Promise.resolve(OmitProperty);
   },
 
@@ -46,7 +46,7 @@ export const mapFromAsync = {
    * }
    * ```
    */
-  null(): Promise<null> {
+  null(this: void): Promise<null> {
     return Promise.resolve(null);
   },
 
@@ -59,7 +59,7 @@ export const mapFromAsync = {
    * }
    * ```
    */
-  undefined(): Promise<undefined> {
+  undefined(this: void): Promise<undefined> {
     return Promise.resolve(undefined);
   },
 };

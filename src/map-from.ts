@@ -17,7 +17,7 @@ export const mapFrom = {
    * }
    * ```
    */
-  constant<TValue>(value: TValue): () => TValue {
+  constant<TValue>(this: void, value: TValue): () => TValue {
     return function constant(): TValue {
       return value;
     };
@@ -33,7 +33,7 @@ export const mapFrom = {
    * }
    * ```
    */
-  omit(): OmitProperty {
+  omit(this: void): OmitProperty {
     return OmitProperty;
   },
 
@@ -46,7 +46,7 @@ export const mapFrom = {
    * }
    * ```
    */
-  null(): null {
+  null(this: void): null {
     return null;
   },
 
@@ -60,6 +60,7 @@ export const mapFrom = {
    * ```
    */
   pick<TKey extends PropertyKey>(
+    this: void,
     key: TKey,
     ...keys: TKey[]
   ): { [K in TKey]: K } {
@@ -78,7 +79,7 @@ export const mapFrom = {
    * }
    * ```
    */
-  undefined(): undefined {
+  undefined(this: void): undefined {
     return undefined;
   },
 };
