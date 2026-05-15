@@ -3,9 +3,9 @@
 This library targets Deno:
 
 ```
-deno 2.0.3 (stable, release, x86_64-pc-windows-msvc)
-v8 12.9.202.13-rusty
-typescript 5.6.2
+deno 2.4.4 (stable, release, x86_64-pc-windows-msvc)
+v8 13.7.152.14-rusty
+typescript 5.8.3
 ```
 
 ## Setup - Windows using PowerShell
@@ -20,16 +20,16 @@ irm get.scoop.sh | iex
 ### Install Deno
 
 ```PowerShell
-scoop install deno@2.0.3
+scoop install deno@2.4.4
 ```
 
 Check the version:
 
 ```PowerShell
 deno --version
-deno 2.0.3 (stable, release, x86_64-pc-windows-msvc)
-v8 12.9.202.13-rusty
-typescript 5.6.2
+deno 2.4.4 (stable, release, x86_64-pc-windows-msvc)
+v8 13.7.152.14-rusty
+typescript 5.8.3
 ```
 
 Create your shell profile if it doesn't already exist:

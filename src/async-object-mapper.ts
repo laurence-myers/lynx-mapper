@@ -1,5 +1,5 @@
 import { OmitProperty } from "./omit-property.ts";
-import type { OptionalArgIfUndefined } from "./types.ts";
+import type { ExactReturn, OptionalArgIfUndefined } from "./types.ts";
 import {
   AsyncMapperFunction,
   AsyncMapperSchemaValue,
@@ -17,7 +17,10 @@ interface AsyncObjectMapperFunctionBeingBuilt<
   TOutput extends object,
   TContext extends object | undefined = undefined,
 > {
-  (value: TInput, context: OptionalArgIfUndefined<TContext>): Promise<TOutput>;
+  (
+    value: TInput,
+    context: OptionalArgIfUndefined<TContext>,
+  ): Promise<ExactReturn<TOutput>>;
 
   schema: AsyncObjectMapperSchema<TInput, TOutput, TContext>;
 }
@@ -128,7 +131,7 @@ export class AsyncObjectMapper<
   array(
     input: Iterable<TInput>,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput[]>;
+  ): Promise<ExactReturn<TOutput[]>>;
   /**
    * Map multiple input objects from some iterable, and return an
    *  array of output objects.
@@ -138,7 +141,7 @@ export class AsyncObjectMapper<
   array(
     input: Iterable<TInput> | null,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput[] | null>;
+  ): Promise<ExactReturn<TOutput[]> | null>;
   /**
    * Map multiple input objects from some iterable, and return an
    *  array of output objects.
@@ -148,7 +151,7 @@ export class AsyncObjectMapper<
   array(
     input: Iterable<TInput> | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput[] | undefined>;
+  ): Promise<ExactReturn<TOutput[]> | undefined>;
   /**
    * Map multiple input objects from some iterable, and return an
    *  array of output objects.
@@ -158,7 +161,7 @@ export class AsyncObjectMapper<
   array(
     input: Iterable<TInput> | null | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput[] | null | undefined>;
+  ): Promise<ExactReturn<TOutput[]> | null | undefined>;
   /**
    * Map multiple input objects from some iterable, and return an
    *  array of output objects.
@@ -168,7 +171,7 @@ export class AsyncObjectMapper<
   async array(
     input: Iterable<TInput> | null | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput[] | null | undefined> {
+  ): Promise<ExactReturn<TOutput[]> | null | undefined> {
     if (input === undefined || input === null) {
       return input;
     } else if (Array.isArray(input)) {
@@ -192,7 +195,7 @@ export class AsyncObjectMapper<
   map(
     input: TInput,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput>;
+  ): Promise<ExactReturn<TOutput>>;
   /**
    * Maps an input object to an output object.
    *
@@ -204,7 +207,7 @@ export class AsyncObjectMapper<
   map(
     input: TInput | null,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput | null>;
+  ): Promise<ExactReturn<TOutput> | null>;
   /**
    * Maps an input object to an output object.
    *
@@ -216,7 +219,7 @@ export class AsyncObjectMapper<
   map(
     input: TInput | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput | undefined>;
+  ): Promise<ExactReturn<TOutput> | undefined>;
   /**
    * Maps an input object to an output object.
    *
@@ -228,7 +231,7 @@ export class AsyncObjectMapper<
   map(
     input: TInput | null | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput | null | undefined>;
+  ): Promise<ExactReturn<TOutput> | null | undefined>;
   /**
    * Maps an input object to an output object.
    *
@@ -238,9 +241,9 @@ export class AsyncObjectMapper<
    * If {@linkcode input} is `null` or `undefined`, it will be returned as-is.
    */
   async map(
-    input: TInput,
+    input: TInput | null | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<TOutput> {
+  ): Promise<ExactReturn<TOutput> | null | undefined> {
     if (input === null || input === undefined) {
       return input;
     }
@@ -256,7 +259,7 @@ export class AsyncObjectMapper<
         }
       }
     }
-    return output as TOutput;
+    return output as ExactReturn<TOutput>;
   }
 
   /**

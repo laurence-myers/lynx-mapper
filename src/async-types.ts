@@ -10,6 +10,7 @@
 import {
   AllowInputKeyIfInputCanExtendOutput,
   AllowOmitIfOptional,
+  ExactReturn,
   OptionalArgIfUndefined,
 } from "./types.ts";
 
@@ -30,7 +31,10 @@ export interface AsyncMapperFunction<
   <TInputSubset extends TInput, TContextSubset extends TContext>(
     input: TInputSubset,
     context: OptionalArgIfUndefined<TContextSubset>,
-  ): Promise<TOutput[TOutputKey] | AllowOmitIfOptional<TOutput, TOutputKey>>;
+  ): Promise<
+    | ExactReturn<TOutput[TOutputKey]>
+    | AllowOmitIfOptional<TOutput, TOutputKey>
+  >;
 }
 
 /**
@@ -77,7 +81,10 @@ export interface AsyncObjectMapperFunction<
   TOutput extends object,
   TContext extends object | undefined = undefined,
 > {
-  (value: TInput, context: OptionalArgIfUndefined<TContext>): Promise<TOutput>;
+  (
+    value: TInput,
+    context: OptionalArgIfUndefined<TContext>,
+  ): Promise<ExactReturn<TOutput>>;
 
   readonly schema: AsyncObjectMapperSchema<TInput, TOutput, TContext>;
 }

@@ -9,6 +9,41 @@
 
 import { OmitProperty } from "./omit-property.ts";
 
+declare const ExactReturnKeys: unique symbol;
+
+/**
+ * Brand an object type with a phantom property whose type is `keyof T`, so
+ *  that a wider key set is NOT assignable to a narrower one. This makes
+ *  mapper-produced object return types invariant in their key set: a mapper
+ *  for a superset type can no longer be substituted where a mapper for a
+ *  subset is expected.
+ *
+ * The brand sits in a covariant property position. A union of keys (e.g.
+ *  `'bar' | 'extra'`) is NOT assignable to a narrower union (e.g. `'bar'`),
+ *  so the structural subtyping that would normally permit
+ *  `ExactReturn<{bar; extra}>` → `ExactReturn<{bar}>` is blocked at the brand.
+ *
+ * The brand is declared optional so that plain object literals (which don't
+ *  carry the brand at runtime) can still be returned directly from mapper
+ *  functions — freshness checks already catch excess properties for fresh
+ *  literals. The brand only constrains composition: assigning the result of
+ *  one mapper into a slot that expects a different mapper's output.
+ *
+ * Distributes over unions so `ExactReturn<NestedOutput | null>` becomes
+ *  `ExactReturn<NestedOutput> | null`, leaving primitives and `null`/
+ *  `undefined` untouched. Arrays of objects have their elements branded,
+ *  so an array of a superset element type also can't be substituted.
+ *
+ * Tuples are preserved element-by-element, so positional and length
+ *  information is not widened away when mapper outputs contain tuple types.
+ */
+export type ExactReturn<T> = T extends readonly unknown[]
+  ? number extends T["length"] ? T extends (infer E)[] ? ExactReturn<E>[]
+    : readonly ExactReturn<T[number]>[]
+  : { [K in keyof T]: ExactReturn<T[K]> }
+  : T extends object ? T & { readonly [ExactReturnKeys]?: keyof T }
+  : T;
+
 /**
  * A function that takes some input object, and an optional context object, and returns an
  *  output. This is used as part of an {@linkcode ObjectMapperSchema}.
@@ -26,7 +61,9 @@ export interface MapperFunction<
   <TInputSubset extends TInput, TContextSubset extends TContext>(
     input: TInputSubset,
     context: OptionalArgIfUndefined<TContextSubset>,
-  ): TOutput[TOutputKey] | AllowOmitIfOptional<TOutput, TOutputKey>;
+  ):
+    | ExactReturn<TOutput[TOutputKey]>
+    | AllowOmitIfOptional<TOutput, TOutputKey>;
 }
 
 /**
@@ -165,7 +202,10 @@ export interface ObjectMapperFunction<
   TOutput extends object,
   TContext extends object | undefined = undefined,
 > {
-  (value: TInput, context: OptionalArgIfUndefined<TContext>): TOutput;
+  (
+    value: TInput,
+    context: OptionalArgIfUndefined<TContext>,
+  ): ExactReturn<TOutput>;
 
   readonly schema: ObjectMapperSchema<TInput, TOutput, TContext>;
 }
