@@ -680,7 +680,7 @@ describe(ObjectMapper.name, () => {
 
       interface Input1 {
         foo: string;
-        nested: NestedOutput1;
+        nested: NestedInput1;
       }
 
       interface Output1 {

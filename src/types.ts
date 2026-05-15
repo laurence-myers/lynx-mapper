@@ -9,6 +9,8 @@
 
 import { OmitProperty } from "./omit-property.ts";
 
+declare const ExactReturnKeys: unique symbol;
+
 /**
  * Brand an object type with a phantom property whose type is `keyof T`, so
  *  that a wider key set is NOT assignable to a narrower one. This makes
@@ -32,12 +34,14 @@ import { OmitProperty } from "./omit-property.ts";
  *  `undefined` untouched. Arrays of objects have their elements branded,
  *  so an array of a superset element type also can't be substituted.
  *
- * (Thank you, Claude <3)
+ * Tuples are preserved element-by-element, so positional and length
+ *  information is not widened away when mapper outputs contain tuple types.
  */
-export type ExactReturn<T> = T extends readonly (infer E)[]
-  ? T extends E[] ? ExactReturn<E>[]
-  : readonly ExactReturn<E>[]
-  : T extends object ? T & { readonly __exactReturnKeys?: keyof T }
+export type ExactReturn<T> = T extends readonly unknown[]
+  ? number extends T["length"] ? T extends (infer E)[] ? ExactReturn<E>[]
+    : readonly ExactReturn<T[number]>[]
+  : { [K in keyof T]: ExactReturn<T[K]> }
+  : T extends object ? T & { readonly [ExactReturnKeys]?: keyof T }
   : T;
 
 /**

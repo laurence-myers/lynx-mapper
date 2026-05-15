@@ -241,9 +241,9 @@ export class AsyncObjectMapper<
    * If {@linkcode input} is `null` or `undefined`, it will be returned as-is.
    */
   async map(
-    input: TInput,
+    input: TInput | null | undefined,
     context: OptionalArgIfUndefined<TContext>,
-  ): Promise<ExactReturn<TOutput>> {
+  ): Promise<ExactReturn<TOutput> | null | undefined> {
     if (input === null || input === undefined) {
       return input;
     }
