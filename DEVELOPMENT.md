@@ -3,9 +3,9 @@
 This library targets Deno:
 
 ```
-deno 2.4.4 (stable, release, x86_64-pc-windows-msvc)
-v8 13.7.152.14-rusty
-typescript 5.8.3
+deno 2.7.14 (stable, release, x86_64-pc-windows-msvc)
+v8 14.7.173.20-rusty
+typescript 5.9.2
 ```
 
 ## Setup - Windows using PowerShell
@@ -20,16 +20,16 @@ irm get.scoop.sh | iex
 ### Install Deno
 
 ```PowerShell
-scoop install deno@2.4.4
+scoop install deno@2.7.14
 ```
 
 Check the version:
 
 ```PowerShell
 deno --version
-deno 2.4.4 (stable, release, x86_64-pc-windows-msvc)
-v8 13.7.152.14-rusty
-typescript 5.8.3
+deno 2.7.14 (stable, release, x86_64-pc-windows-msvc)
+v8 14.7.173.20-rusty
+typescript 5.9.2
 ```
 
 Create your shell profile if it doesn't already exist:
@@ -48,12 +48,12 @@ deno completions powershell >> $PROFILE
 
 ### Setup for Publishing to NPM
 
-Install NodeJS v20 and NPM 10.8.2.
+Install NodeJS v24 and NPM 11.12.1.
 
 ```PowerShell
-scoop install nodejs-lts@20.18.0
+scoop install nodejs-lts@24.15.0
 npm --version
-10.8.2
+11.12.1
 ```
 
 ## IntelliJ Setup

@@ -34,7 +34,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.0.x
+          deno-version: v2.7.x
       - name: Build docs
         run: deno task build-docs
       - name: Upload artifact
