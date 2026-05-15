@@ -1,6 +1,6 @@
 // deno-lint-ignore-file require-await
-import { describe, it } from "jsr:@std/testing/bdd";
-import { expect } from "jsr:@std/expect";
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
 import { AsyncObjectMapper } from "../src/async-object-mapper.ts";
 import { OmitProperty } from "../src/omit-property.ts";
 import { mapFromAsync } from "../src/map-from-async.ts";

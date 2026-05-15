@@ -1,5 +1,5 @@
-import { describe, it } from "jsr:@std/testing/bdd";
-import { expect } from "jsr:@std/expect";
+import { describe, it } from "@std/testing/bdd";
+import { expect } from "@std/expect";
 import { ObjectMapper } from "../src/object-mapper.ts";
 import { mapFrom } from "../src/map-from.ts";
 import { OmitProperty } from "../src/omit-property.ts";

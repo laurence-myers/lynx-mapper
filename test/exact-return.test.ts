@@ -1,4 +1,4 @@
-import { describe, it } from "jsr:@std/testing/bdd";
+import { describe, it } from "@std/testing/bdd";
 import { type ExactReturn } from "../src/types.ts";
 
 describe("ExactReturn", () => {
