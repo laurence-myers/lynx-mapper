@@ -83,11 +83,21 @@ deno task check-all
 
 ## Publish to NPM
 
+Ensure you're authenticated with the NPM registry.
+
+```PowerShell
+npm adduser
+```
+
 Change `1.2.3` to the desired version.
 
 ```PowerShell
 deno task build-npm 1.2.3
+cd npm
+npm publish
 ```
+
+Tag the release, like `release/v1.2.3`.
 
 ## Build docs
 
