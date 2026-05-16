@@ -45,7 +45,7 @@ await build({
   },
   postBuild() {
     // steps to run after building and before running the tests
-    for (const fileName of ["LICENSE", "README.md"]) {
+    for (const fileName of ["CHANGELOG.md", "LICENSE", "README.md"]) {
       Deno.copyFileSync(fileName, "npm/" + fileName);
     }
   },
