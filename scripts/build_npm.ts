@@ -15,18 +15,6 @@ await build({
     target: "ES2022",
   },
   entryPoints: ["./mod.ts"],
-  filterDiagnostic(diagnostic) {
-    const fileName = diagnostic.file?.fileName;
-    // The test libs want `Set.intersection()` and `Set.symmetricDifference()`.
-    // However, things seem to work if we just ignore the type-check errors.
-    if (
-      fileName?.includes("@std/assert/1.0.6/") ||
-      fileName?.includes("@std/expect/1.0.6/")
-    ) {
-      return false;
-    }
-    return true;
-  },
   outDir: "./npm",
   package: {
     // package.json properties
