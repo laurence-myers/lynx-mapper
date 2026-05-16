@@ -4,13 +4,15 @@
 
 ### Breaking Changes
 
-- Nested mappers, or mapper schemas constructed from spreading an existing mapper schema of a superset type, must return 
-  exact type matches; you will no longer be able to use a mapper that returns more properties than the desired output
-  type.
+- Nested mappers, or mapper schemas constructed from spreading an existing
+  mapper schema of a superset type, must return exact type matches; you will no
+  longer be able to use a mapper that returns more properties than the desired
+  output type.
 
 ### Features
 
-- Add `mapFrom.pick()`, for conveniently picking input properties with the same name and type as the output properties.
+- Add `mapFrom.pick()`, for conveniently picking input properties with the same
+  name and type as the output properties.
 
 ### Fixes
 
